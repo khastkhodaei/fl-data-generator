@@ -55,6 +55,13 @@ viz = [
 "Bug Tracker" = "https://github.com/khastkhodaei/fl-data-generator/issues"
 "Source Code" = "https://github.com/khastkhodaei/fl-data-generator"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["fl_data_generator*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

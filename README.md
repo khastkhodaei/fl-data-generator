@@ -70,8 +70,12 @@ targets = np.random.randint(0, num_classes, size=num_samples)
 
 ```text
 fl-data-generator/
-├── fl_data_generator/       # Core library package
-│   └── __init__.py          # Package initialization
+├── src/
+│   └── fl_data_generator/   # Core library package
+│       ├── __init__.py      # Package initialization
+│       └── iid.py           # IID data partitioner
+├── tests/                   # Test suite
+│   └── test_iid.py
 ├── pyproject.toml           # Build configuration and dependency specification
 ├── LICENSE                  # MIT License
 ├── README.md                # Project documentation
