@@ -3,6 +3,8 @@ import pytest
 
 from fl_data_generator import pathological_partition
 
+_RNG = np.random.default_rng(4)
+
 
 def test_pathological_partition_classes_per_client():
     labels = np.repeat(np.arange(10), 100)
@@ -22,7 +24,7 @@ def test_pathological_partition_classes_per_client():
 
 
 def test_pathological_partition_all_indices_covered():
-    labels = np.random.randint(0, 6, size=300)
+    labels = _RNG.integers(0, 6, size=300)
     num_clients = 6
     classes_per_client = 2
 

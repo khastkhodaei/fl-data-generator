@@ -9,10 +9,12 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
+_RNG = np.random.default_rng(1)
+
 
 def test_federated_dataset_custom_arrays_iid():
-    X = np.random.randn(200, 10)
-    y = np.random.randint(0, 4, size=200)
+    X = _RNG.standard_normal((200, 10))
+    y = _RNG.integers(0, 4, size=200)
 
     fed_data = FederatedDataset(
         dataset=(X, y),
@@ -44,8 +46,8 @@ def test_federated_dataset_custom_arrays_iid():
 
 @pytest.mark.parametrize("strategy", ["dirichlet", "pathological", "quantity", "hybrid"])
 def test_federated_dataset_partition_strategies(strategy):
-    X = np.random.randn(300, 5)
-    y = np.random.randint(0, 6, size=300)
+    X = _RNG.standard_normal((300, 5))
+    y = _RNG.integers(0, 6, size=300)
 
     fed_data = FederatedDataset(
         dataset=(X, y),
@@ -82,8 +84,8 @@ def test_federated_dataset_transforms():
 
 
 def test_federated_dataset_repr_and_properties():
-    X = np.random.randn(80, 2)
-    y = np.random.randint(0, 2, size=80)
+    X = _RNG.standard_normal((80, 2))
+    y = _RNG.integers(0, 2, size=80)
 
     fed_data = FederatedDataset((X, y), num_clients=4, partition="iid", seed=42)
     repr_str = repr(fed_data)
@@ -93,8 +95,8 @@ def test_federated_dataset_repr_and_properties():
 
 
 def test_federated_dataset_invalid_inputs():
-    X = np.random.randn(20, 2)
-    y = np.random.randint(0, 2, size=20)
+    X = _RNG.standard_normal((20, 2))
+    y = _RNG.integers(0, 2, size=20)
 
     with pytest.raises(ValueError, match="Unsupported partition"):
         FederatedDataset((X, y), num_clients=2, partition="unknown")

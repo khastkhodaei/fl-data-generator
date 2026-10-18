@@ -3,9 +3,11 @@ import pytest
 
 from fl_data_generator import iid_partition
 
+_RNG = np.random.default_rng(3)
+
 
 def test_iid_partition_sample_count():
-    labels = np.random.randint(0, 10, size=100)
+    labels = _RNG.integers(0, 10, size=100)
     num_clients = 10
     client_dict = iid_partition(labels, num_clients, seed=42)
 

@@ -3,9 +3,11 @@ import pytest
 
 from fl_data_generator import quantity_skew_partition
 
+_RNG = np.random.default_rng(5)
+
 
 def test_quantity_skew_partition_all_indices_allocated():
-    labels = np.random.randint(0, 5, size=500)
+    labels = _RNG.integers(0, 5, size=500)
     num_clients = 8
     client_dict = quantity_skew_partition(labels, num_clients=num_clients, beta=0.5, seed=42)
 
