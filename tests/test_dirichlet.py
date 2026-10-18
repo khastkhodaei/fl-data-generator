@@ -3,11 +3,10 @@ import pytest
 
 from fl_data_generator import dirichlet_partition
 
-_RNG = np.random.default_rng(0)
-
 
 def test_dirichlet_partition_all_indices_allocated():
-    labels = _RNG.integers(0, 5, size=200)
+    rng = np.random.default_rng(100)
+    labels = rng.integers(0, 5, size=200)
     num_clients = 8
     client_dict = dirichlet_partition(labels, num_clients, alpha=0.5, seed=42)
 
@@ -64,7 +63,8 @@ def test_dirichlet_partition_skew_levels():
 
 
 def test_dirichlet_partition_vector_alpha():
-    labels = _RNG.integers(0, 3, size=90)
+    rng = np.random.default_rng(101)
+    labels = rng.integers(0, 3, size=90)
     alpha_vec = [0.1, 0.5, 1.0]
     client_dict = dirichlet_partition(labels, num_clients=3, alpha=alpha_vec, seed=42)
 

@@ -3,11 +3,10 @@ import pytest
 
 from fl_data_generator import hybrid_partition
 
-_RNG = np.random.default_rng(2)
-
 
 def test_hybrid_partition_index_coverage():
-    labels = _RNG.integers(0, 5, size=400)
+    rng = np.random.default_rng(300)
+    labels = rng.integers(0, 5, size=400)
     num_clients = 6
     client_dict = hybrid_partition(labels, num_clients=num_clients, alpha=0.5, beta=0.5, seed=42)
 
@@ -23,7 +22,8 @@ def test_hybrid_partition_index_coverage():
 
 
 def test_hybrid_partition_quantity_skew_effect():
-    labels = _RNG.integers(0, 4, size=600)
+    rng = np.random.default_rng(301)
+    labels = rng.integers(0, 4, size=600)
     num_clients = 8
 
     skewed_sizes = [
@@ -66,7 +66,8 @@ def test_hybrid_partition_label_skew_effect():
 
 
 def test_hybrid_partition_reproducibility():
-    labels = _RNG.integers(0, 4, size=150)
+    rng = np.random.default_rng(302)
+    labels = rng.integers(0, 4, size=150)
     split_a = hybrid_partition(labels, 4, alpha=0.5, beta=0.5, seed=123)
     split_b = hybrid_partition(labels, 4, alpha=0.5, beta=0.5, seed=123)
     split_c = hybrid_partition(labels, 4, alpha=0.5, beta=0.5, seed=999)

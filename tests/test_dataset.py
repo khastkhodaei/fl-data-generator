@@ -9,12 +9,11 @@ try:
 except ImportError:
     _HAS_TORCH = False
 
-_RNG = np.random.default_rng(1)
-
 
 def test_federated_dataset_custom_arrays_iid():
-    X = _RNG.standard_normal((200, 10))
-    y = _RNG.integers(0, 4, size=200)
+    rng = np.random.default_rng(200)
+    X = rng.standard_normal((200, 10))
+    y = rng.integers(0, 4, size=200)
 
     fed_data = FederatedDataset(
         dataset=(X, y),
@@ -46,8 +45,9 @@ def test_federated_dataset_custom_arrays_iid():
 
 @pytest.mark.parametrize("strategy", ["dirichlet", "pathological", "quantity", "hybrid"])
 def test_federated_dataset_partition_strategies(strategy):
-    X = _RNG.standard_normal((300, 5))
-    y = _RNG.integers(0, 6, size=300)
+    rng = np.random.default_rng(201)
+    X = rng.standard_normal((300, 5))
+    y = rng.integers(0, 6, size=300)
 
     fed_data = FederatedDataset(
         dataset=(X, y),
@@ -84,8 +84,9 @@ def test_federated_dataset_transforms():
 
 
 def test_federated_dataset_repr_and_properties():
-    X = _RNG.standard_normal((80, 2))
-    y = _RNG.integers(0, 2, size=80)
+    rng = np.random.default_rng(202)
+    X = rng.standard_normal((80, 2))
+    y = rng.integers(0, 2, size=80)
 
     fed_data = FederatedDataset((X, y), num_clients=4, partition="iid", seed=42)
     repr_str = repr(fed_data)
@@ -95,8 +96,9 @@ def test_federated_dataset_repr_and_properties():
 
 
 def test_federated_dataset_invalid_inputs():
-    X = _RNG.standard_normal((20, 2))
-    y = _RNG.integers(0, 2, size=20)
+    rng = np.random.default_rng(203)
+    X = rng.standard_normal((20, 2))
+    y = rng.integers(0, 2, size=20)
 
     with pytest.raises(ValueError, match="Unsupported partition"):
         FederatedDataset((X, y), num_clients=2, partition="unknown")
