@@ -255,16 +255,29 @@ def test_numpy_dataset_direct():
 
 
 def test_federated_dataset_lazy_torch_import():
+    from pathlib import Path
     import subprocess
     import sys
 
+    src_dir = str(Path(__file__).resolve().parents[1] / "src")
     code = (
-        "import sys, fl_data_generator; "
+        f"import sys; sys.path.insert(0, {src_dir!r}); "
+        "import fl_data_generator; "
         "assert 'torch' not in sys.modules, 'torch is unexpectedly loaded!'; "
         "assert 'torchvision' not in sys.modules, 'torchvision is unexpectedly loaded!'"
     )
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert result.returncode == 0, f"Lazy import failed: {result.stderr}"
+
+
+def test_numpy_dataset_torch_interop():
+    torch = pytest.importorskip("torch")
+
+    X = np.ones((10, 3))
+    y = np.arange(10)
+    ds = NumpyDataset(X, y)
+
+    assert isinstance(ds, torch.utils.data.Dataset)
 
 
 def test_federated_dataset_num_clients_types():

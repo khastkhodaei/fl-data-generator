@@ -160,6 +160,14 @@ def test_dirichlet_partition_invalid_max_retries(invalid_max_retries):
         dirichlet_partition(labels, num_clients=2, max_retries=invalid_max_retries)
 
 
+def test_dirichlet_partition_numpy_scalar_min_size_and_max_retries():
+    labels = np.repeat(np.arange(3), 20)
+    res = dirichlet_partition(
+        labels, num_clients=3, min_size=np.int64(2), max_retries=np.int64(500), seed=42
+    )
+    assert len(res) == 3
+
+
 
 def test_dirichlet_partition_max_retries_exceeded_raises_runtime_error():
     labels = np.array([0, 1] * 5)
@@ -201,6 +209,12 @@ def test_dirichlet_partition_numpy_scalar_alpha():
     assert len(res1) == 2
     res2 = dirichlet_partition(labels, 2, alpha=np.array(0.5), seed=42)
     assert len(res2) == 2
+
+
+def test_dirichlet_partition_bool_alpha():
+    labels = [0, 1] * 5
+    with pytest.raises(ValueError, match="alpha cannot be a boolean"):
+        dirichlet_partition(labels, 2, alpha=True)
 
 
 

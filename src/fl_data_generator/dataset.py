@@ -13,14 +13,13 @@ from .quantity import quantity_skew_partition
 _HAS_TORCH = importlib.util.find_spec("torch") is not None
 _HAS_TORCHVISION = importlib.util.find_spec("torchvision") is not None
 
-Dataset = object
-DataLoader = None
-Subset = None
-tv_datasets = None
 
-
-class NumpyDataset(Dataset):
+class NumpyDataset:
     """Lightweight dataset wrapper for NumPy arrays or tensor tuples.
+
+    When PyTorch is imported, instances of NumpyDataset automatically inherit
+    from `torch.utils.data.Dataset` for seamless integration with PyTorch
+    ecosystem tools (e.g., DataLoaders, PyTorch Lightning, Flower).
 
     Parameters
     ----------
@@ -33,6 +32,17 @@ class NumpyDataset(Dataset):
     target_transform : callable, optional
         Transformation applied to target labels.
     """
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+        import sys
+
+        if "torch" in sys.modules:
+            import torch.utils.data
+
+            if not issubclass(cls, torch.utils.data.Dataset):
+                cls_torch = type("NumpyDataset", (cls, torch.utils.data.Dataset), {})
+                return super().__new__(cls_torch)
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -176,7 +186,6 @@ class FederatedDataset:
         target_transform: Optional[Callable] = None,
     ) -> None:
         self.data_dir = data_dir
-        self.num_clients = num_clients
         self.partition = partition.lower()
         self.alpha = alpha
         self.beta = beta
@@ -219,20 +228,18 @@ class FederatedDataset:
                     f"Please install torchvision or provide custom (X, y) data."
                 )
 
-            global tv_datasets
-            if tv_datasets is None:
-                try:
-                    import torchvision.datasets as _tv_datasets
+            import sys
 
-                    tv_datasets = _tv_datasets
-                except ImportError:
-                    raise ImportError(
-                        f"torchvision is required to download and load '{dataset}'. "
-                        f"Please install torchvision or provide custom (X, y) data."
-                    )
+            cur_module = sys.modules[__name__]
+            datasets_module = getattr(cur_module, "tv_datasets")
+            if datasets_module is None:
+                raise ImportError(
+                    f"torchvision is required to download and load '{dataset}'. "
+                    f"Please install torchvision or provide custom (X, y) data."
+                )
 
             ds_class_name = self.SUPPORTED_DATASETS[ds_key]
-            ds_cls = getattr(tv_datasets, ds_class_name)
+            ds_cls = getattr(datasets_module, ds_class_name)
 
             ds_instance = ds_cls(
                 root=self.data_dir,
@@ -359,16 +366,12 @@ class FederatedDataset:
         """
         indices = self.get_client_indices(client_id)
         if _HAS_TORCH:
-            global Subset
-            if Subset is None:
-                try:
-                    from torch.utils.data import Subset as _Subset
+            import sys
 
-                    Subset = _Subset
-                except ImportError:
-                    Subset = None
-            if Subset is not None:
-                return Subset(self.base_dataset, indices)
+            cur_module = sys.modules[__name__]
+            subset_cls = getattr(cur_module, "Subset")
+            if subset_cls is not None:
+                return subset_cls(self.base_dataset, indices)
 
         # Fallback subset wrapper for non-torch environments
         class _NonTorchSubset:
@@ -415,20 +418,18 @@ class FederatedDataset:
                 "Install torch (`pip install torch`) or use get_client_dataset() / get_client_indices()."
             )
 
-        global DataLoader
-        if DataLoader is None:
-            try:
-                from torch.utils.data import DataLoader as _DataLoader
+        import sys
 
-                DataLoader = _DataLoader
-            except ImportError:
-                raise ImportError(
-                    "PyTorch is required to create a DataLoader. "
-                    "Install torch (`pip install torch`) or use get_client_dataset() / get_client_indices()."
-                )
+        cur_module = sys.modules[__name__]
+        loader_cls = getattr(cur_module, "DataLoader")
+        if loader_cls is None:
+            raise ImportError(
+                "PyTorch is required to create a DataLoader. "
+                "Install torch (`pip install torch`) or use get_client_dataset() / get_client_indices()."
+            )
 
         client_ds = self.get_client_dataset(client_id)
-        return DataLoader(client_ds, batch_size=batch_size, shuffle=shuffle, **kwargs)
+        return loader_cls(client_ds, batch_size=batch_size, shuffle=shuffle, **kwargs)
 
     @property
     def client_sizes(self) -> Dict[int, int]:
@@ -444,3 +445,32 @@ class FederatedDataset:
             f"FederatedDataset(num_clients={self.num_clients}, "
             f"partition='{self.partition}', total_samples={len(self)})"
         )
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve lazy module-level exports (Dataset, DataLoader, Subset, tv_datasets)."""
+    if name == "Dataset":
+        if _HAS_TORCH:
+            from torch.utils.data import Dataset as _Dataset
+
+            return _Dataset
+        return object
+    if name == "DataLoader":
+        if _HAS_TORCH:
+            from torch.utils.data import DataLoader as _DataLoader
+
+            return _DataLoader
+        return None
+    if name == "Subset":
+        if _HAS_TORCH:
+            from torch.utils.data import Subset as _Subset
+
+            return _Subset
+        return None
+    if name == "tv_datasets":
+        if _HAS_TORCHVISION:
+            import torchvision.datasets as _tv_datasets
+
+            return _tv_datasets
+        return None
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

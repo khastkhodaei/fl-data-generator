@@ -102,6 +102,7 @@ def pathological_partition(
                 f"the assigned {needed_shards} shard(s). Cannot partition without producing empty shards."
             )
     counts = assigned_counts
+    rng.shuffle(counts)  # stream-preserving: keeps RNG state sequence identical to <=0.1.2
 
 
     client_classes = [set() for _ in range(num_clients)]

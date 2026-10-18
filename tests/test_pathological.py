@@ -203,4 +203,11 @@ def test_pathological_partition_float_labels_raises():
         pathological_partition(labels, num_clients=2, classes_per_client=1)
 
 
+def test_pathological_partition_seed_compatibility_regression():
+    labels = np.repeat(np.arange(10), 50)
+    res = pathological_partition(labels, num_clients=10, classes_per_client=2, seed=42)
+    expected_client_0_prefix = np.array([181, 394, 366, 186, 370])
+    np.testing.assert_array_equal(res[0][:5], expected_client_0_prefix)
+
+
 

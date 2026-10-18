@@ -9,15 +9,23 @@ import numpy as np
 def validate_partitioner_int(name: str, value: Any, *, min_value: int = 1) -> int:
     """Validate that a parameter is an integer >= min_value and not a boolean."""
     if isinstance(value, (bool, np.bool_)):
+        if name == "max_retries":
+            raise ValueError(f"max_retries must be a positive integer, got {value}")
         raise ValueError(f"{name} cannot be a boolean, got {value!r}")
     try:
         val = operator.index(value)
     except TypeError:
+        if name == "max_retries":
+            raise ValueError(f"max_retries must be a positive integer, got {value}")
         raise ValueError(f"{name} must be an integer, got {value!r}") from None
 
     if val < min_value:
+        if name == "max_retries":
+            raise ValueError(f"max_retries must be a positive integer, got {val}")
         if min_value == 1:
             raise ValueError(f"{name} must be positive, got {val}")
+        if min_value == 0:
+            raise ValueError(f"{name} must be non-negative, got {val}")
         raise ValueError(f"{name} must be >= {min_value}, got {val}")
     return val
 

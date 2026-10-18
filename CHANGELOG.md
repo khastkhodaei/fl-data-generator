@@ -12,9 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed silent sample corruption and empty client assignments in `hybrid_partition` by strictly validating that `alpha` and `beta` are finite, positive, non-boolean scalars (rejecting `NaN`, `Inf`, booleans, and sequences).
 - Fixed float64 int64 overflow check in `validate_labels` for values exceeding `int64` bounds (such as `2.0**63` and `< -2.0**63`).
-- Fixed seed-dependent spurious `ValueError` in `pathological_partition` by deterministically matching class sample capacities before shuffling.
-- Unified integer parameter validation across all partitioners (`num_clients`, `classes_per_client`) using `operator.index` and rejecting `bool` and `np.bool_`.
-- Made PyTorch and TorchVision imports lazy in `dataset.py`, dramatically cutting top-level `import fl_data_generator` initialization time and module footprint when PyTorch is not needed.
+- Fixed seed-dependent spurious `ValueError` in `pathological_partition` by deterministically validating class sample capacities while preserving the RNG shuffle sequence and exact backward compatibility for reproducible seeds.
+- Unified integer parameter validation across all partitioners (`num_clients`, `classes_per_client`, `min_size`, `max_retries`) using `operator.index` and accepting NumPy integer scalars while rejecting `bool` and `np.bool_`.
+- Made PyTorch and TorchVision imports lazy in `dataset.py`, dramatically cutting top-level `import fl_data_generator` initialization time (from ~4.3s to ~0.02s) and memory footprint when PyTorch is not needed.
+
+### Changed
+- Rejection of boolean values (`bool`, `np.bool_`) and non-integer floats across integer arguments (`num_clients`, `classes_per_client`, `min_size`, `max_retries`) now consistently raises `ValueError`.
+- `NumpyDataset` is now a standalone duck-typed class that dynamically inherits from `torch.utils.data.Dataset` when PyTorch is imported, preserving compatibility with PyTorch Lightning and Flower while keeping imports lazy.
+- Module-level attributes `Dataset`, `DataLoader`, `Subset`, and `tv_datasets` in `fl_data_generator.dataset` are now resolved lazily via PEP 562 `__getattr__`.
 
 ## [0.1.2] - 2026-10-18
 

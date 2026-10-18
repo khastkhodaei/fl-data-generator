@@ -108,3 +108,11 @@ def test_quantity_skew_partition_numpy_scalar_beta():
     assert len(res2) == 2
 
 
+def test_quantity_skew_partition_bool_and_vector_validation():
+    labels = [0, 1] * 5
+    with pytest.raises(ValueError, match="beta cannot be a boolean"):
+        quantity_skew_partition(labels, 2, beta=True)
+    with pytest.raises(ValueError, match="All beta values must be positive"):
+        quantity_skew_partition(labels, 2, beta=[0.5, -0.1])
+
+
