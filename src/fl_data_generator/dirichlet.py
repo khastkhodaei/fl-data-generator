@@ -10,6 +10,8 @@ def dirichlet_partition(
     num_clients: int,
     alpha: Union[float, Sequence[float]] = 0.5,
     seed: Optional[int] = None,
+    min_size: int = 1,
+    max_retries: int = 100,
 ) -> Dict[int, np.ndarray]:
     """Partition dataset indices among clients using a Dirichlet distribution over classes.
 
@@ -27,6 +29,10 @@ def dirichlet_partition(
         Concentration parameter for the Dirichlet distribution.
     seed : int, optional
         Random seed for reproducibility.
+    min_size : int, default=1
+        Minimum number of samples required per client.
+    max_retries : int, default=100
+        Maximum number of Dirichlet resampling attempts to satisfy min_size.
 
     Returns
     -------
@@ -40,6 +46,10 @@ def dirichlet_partition(
         If num_clients <= 0 or alpha <= 0.
         If num_clients exceeds num_samples.
         If alpha is a sequence and its length does not match num_clients.
+        If min_size < 0, not an integer, or min_size * num_clients > num_samples.
+    RuntimeError
+        If unable to partition data such that all clients receive at least min_size samples
+        within max_retries attempts.
     """
     labels_arr = validate_labels(labels)
     num_samples = len(labels_arr)
@@ -51,7 +61,16 @@ def dirichlet_partition(
             f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"
         )
 
-
+    if not isinstance(min_size, int) or isinstance(min_size, bool):
+        raise ValueError(f"min_size must be an integer, got {type(min_size).__name__}")  # noqa: TRY004
+    if min_size < 0:
+        raise ValueError(f"min_size must be non-negative, got {min_size}")
+    if min_size * num_clients > num_samples:
+        raise ValueError(
+            f"min_size * num_clients ({min_size * num_clients}) cannot exceed number of samples ({num_samples})"
+        )
+    if not isinstance(max_retries, int) or isinstance(max_retries, bool) or max_retries <= 0:
+        raise ValueError(f"max_retries must be a positive integer, got {max_retries}")
 
     if isinstance(alpha, (int, float)):
         if alpha <= 0:
@@ -67,21 +86,30 @@ def dirichlet_partition(
             raise ValueError("All alpha values must be positive")
 
     rng = np.random.default_rng(seed)
-    client_indices: Dict[int, list] = {cid: [] for cid in range(num_clients)}
-
     unique_classes = np.unique(labels_arr)
 
-    for cls in unique_classes:
-        cls_idx = np.where(labels_arr == cls)[0]
-        rng.shuffle(cls_idx)
+    for _ in range(max_retries):
+        client_indices: Dict[int, list] = {cid: [] for cid in range(num_clients)}
 
-        proportions = rng.dirichlet(alpha_vec)
-        split_points = (np.cumsum(proportions)[:-1] * len(cls_idx)).astype(int)
-        splits = np.split(cls_idx, split_points)
+        for cls in unique_classes:
+            cls_idx = np.where(labels_arr == cls)[0]
+            rng.shuffle(cls_idx)
 
-        for cid, split in enumerate(splits):
-            if len(split) > 0:
-                client_indices[cid].append(split)
+            proportions = rng.dirichlet(alpha_vec)
+            split_points = (np.cumsum(proportions)[:-1] * len(cls_idx)).astype(int)
+            splits = np.split(cls_idx, split_points)
+
+            for cid, split in enumerate(splits):
+                if len(split) > 0:
+                    client_indices[cid].append(split)
+
+        if all(sum(len(s) for s in client_indices[cid]) >= min_size for cid in range(num_clients)):
+            break
+    else:
+        raise RuntimeError(
+            f"Could not partition data such that all clients receive at least min_size={min_size} samples "
+            f"after {max_retries} retries. Try using a larger alpha or a smaller min_size."
+        )
 
     result = {}
     for cid in range(num_clients):

@@ -131,3 +131,68 @@ def test_dirichlet_partition_num_clients_exceeds_samples_raises():
         dirichlet_partition(labels, num_clients=num_clients)
 
 
+@pytest.mark.parametrize(
+    "invalid_min_size",
+    [
+        -1,
+        1.5,
+        True,
+        False,
+        "1",
+    ],
+)
+def test_dirichlet_partition_invalid_min_size_type_or_negative(invalid_min_size):
+    labels = [0, 1, 0, 1]
+    with pytest.raises(ValueError):
+        dirichlet_partition(labels, num_clients=2, min_size=invalid_min_size)
+
+
+def test_dirichlet_partition_min_size_times_num_clients_exceeds_samples_raises():
+    labels = [0, 1, 0, 1, 0]
+    with pytest.raises(ValueError):
+        dirichlet_partition(labels, num_clients=3, min_size=2)
+
+
+@pytest.mark.parametrize("invalid_max_retries", [0, -1, 1.5, True, False, "10"])
+def test_dirichlet_partition_invalid_max_retries(invalid_max_retries):
+    labels = [0, 1, 0, 1]
+    with pytest.raises(ValueError, match="max_retries must be a positive integer"):
+        dirichlet_partition(labels, num_clients=2, max_retries=invalid_max_retries)
+
+
+
+def test_dirichlet_partition_max_retries_exceeded_raises_runtime_error():
+    labels = np.array([0, 1] * 5)
+    with pytest.raises(
+        RuntimeError,
+        match=r"(?=.*alpha)(?=.*min_size)",
+    ):
+        dirichlet_partition(labels, num_clients=5, alpha=1e-5, min_size=2, max_retries=1, seed=0)
+
+
+def test_dirichlet_partition_regression_seeds_0_to_19():
+    labels = np.repeat(np.arange(10), 50)
+    for seed in range(20):
+        split_default = dirichlet_partition(labels, num_clients=10, alpha=0.5, seed=seed)
+        split_min_zero = dirichlet_partition(labels, num_clients=10, alpha=0.5, seed=seed, min_size=0)
+        for cid in range(10):
+            np.testing.assert_array_equal(split_default[cid], split_min_zero[cid])
+
+
+def test_dirichlet_partition_min_size_zero_allows_empty_client():
+    labels = np.array([0, 1] * 10)
+    split = dirichlet_partition(labels, num_clients=5, alpha=0.1, seed=1, min_size=0)
+    sizes = [len(split[cid]) for cid in range(5)]
+    assert any(s == 0 for s in sizes)
+    assert sum(sizes) == len(labels)
+
+
+def test_dirichlet_partition_default_min_size_eliminates_empty_clients():
+    labels = np.array([0, 1] * 10)
+    split = dirichlet_partition(labels, num_clients=5, alpha=0.1, seed=1)
+    sizes = [len(split[cid]) for cid in range(5)]
+    assert all(s >= 1 for s in sizes)
+    assert sum(sizes) == len(labels)
+
+
+
