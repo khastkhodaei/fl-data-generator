@@ -12,11 +12,18 @@ def hybrid_partition(
     beta: float = 0.5,
     seed: Optional[int] = None,
 ) -> Dict[int, np.ndarray]:
-    """Partition dataset indices combining label skew and quantity skew.
+    """Partition dataset indices combining label skew and quantity skew (experimental).
 
-    First determines client sample capacities using a quantity skew distribution
-    parameterized by beta. Then allocates samples to each client based on class
-    preference distributions drawn from a Dirichlet distribution parameterized by alpha.
+    .. warning::
+        This method is experimental and not a standard published partitioning method.
+        It uses sequential allocation: client sample capacities are first determined
+        via Dirichlet distribution with parameter beta (quantity skew). Samples are then
+        allocated sequentially to clients in a randomly permuted client order based on class
+        preference distributions drawn from a Dirichlet distribution with parameter alpha
+        (label skew). Because samples are drawn without replacement from a shared finite pool,
+        there is a client-order effect: earlier clients in the sequence have access to the
+        full class distribution, while later clients may receive residual classes that deviate
+        from their drawn preferences.
 
     Parameters
     ----------
@@ -26,10 +33,10 @@ def hybrid_partition(
         Number of clients to partition data among.
     alpha : float, default=0.5
         Concentration parameter for the Dirichlet distribution governing label skew.
-        Smaller values induce stronger class preference heterogeneity.
+        Must be a positive scalar. Smaller values induce stronger class preference heterogeneity.
     beta : float, default=0.5
         Concentration parameter for the Dirichlet distribution governing quantity skew.
-        Smaller values induce greater disparity in sample volume across clients.
+        Must be a positive scalar. Smaller values induce greater disparity in sample volume across clients.
     seed : int, optional
         Random seed for reproducibility.
 
@@ -44,6 +51,7 @@ def hybrid_partition(
         If labels is invalid (empty, not 1D, non-integer, or contains NaN/Inf).
         If num_clients <= 0, alpha <= 0, or beta <= 0.
         If num_clients exceeds num_samples.
+        If alpha or beta is a sequence rather than a scalar.
     """
     labels_arr = validate_labels(labels)
     num_samples = len(labels_arr)
@@ -51,12 +59,17 @@ def hybrid_partition(
     if num_clients <= 0:
         raise ValueError(f"num_clients must be positive, got {num_clients}")
     if num_clients > num_samples:
-
         raise ValueError(
             f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"
         )
+
+    if isinstance(alpha, (Sequence, np.ndarray)) or np.ndim(alpha) > 0 or not isinstance(alpha, (int, float, np.number)) or isinstance(alpha, bool):
+        raise ValueError(f"alpha must be a scalar positive number, got {alpha}")
     if alpha <= 0:
         raise ValueError(f"alpha must be positive, got {alpha}")
+
+    if isinstance(beta, (Sequence, np.ndarray)) or np.ndim(beta) > 0 or not isinstance(beta, (int, float, np.number)) or isinstance(beta, bool):
+        raise ValueError(f"beta must be a scalar positive number, got {beta}")
     if beta <= 0:
         raise ValueError(f"beta must be positive, got {beta}")
 
