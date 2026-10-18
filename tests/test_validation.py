@@ -100,4 +100,9 @@ def test_validate_labels_complex_raises() -> None:
 def test_validate_labels_overflow_raises() -> None:
     with pytest.raises(ValueError, match="overflow|out of bounds|cannot fit"):
         validate_labels([1e20, 2e20])
+    with pytest.raises(ValueError, match="overflow|out of bounds|cannot fit"):
+        validate_labels([2.0**63])
+    with pytest.raises(ValueError, match="overflow|out of bounds|cannot fit"):
+        validate_labels([-2.0**63 - 10000.0])
+
 

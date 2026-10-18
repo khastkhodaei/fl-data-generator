@@ -1,32 +1,22 @@
+import importlib.util
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-try:
-    import torch  # noqa: F401
-    from torch.utils.data import DataLoader, Dataset, Subset
-
-    _HAS_TORCH = True
-except ImportError:
-    _HAS_TORCH = False
-    Dataset = object  # type: ignore
-    DataLoader = None  # type: ignore
-    Subset = None  # type: ignore
-
-try:
-    import torchvision  # noqa: F401
-    import torchvision.datasets as tv_datasets
-
-    _HAS_TORCHVISION = True
-except ImportError:
-    _HAS_TORCHVISION = False
-    tv_datasets = None  # type: ignore
-
+from ._validation import validate_partitioner_int
 from .dirichlet import dirichlet_partition
 from .hybrid import hybrid_partition
 from .iid import iid_partition
 from .pathological import pathological_partition
 from .quantity import quantity_skew_partition
+
+_HAS_TORCH = importlib.util.find_spec("torch") is not None
+_HAS_TORCHVISION = importlib.util.find_spec("torchvision") is not None
+
+Dataset = object
+DataLoader = None
+Subset = None
+tv_datasets = None
 
 
 class NumpyDataset(Dataset):
@@ -197,14 +187,15 @@ class FederatedDataset:
         self.transform = transform
         self.target_transform = target_transform
 
-        if self.num_clients <= 0:
-            raise ValueError(
-                f"num_clients must be positive, got {self.num_clients}"
-            )
+        self.num_clients = validate_partitioner_int("num_clients", num_clients, min_value=1)
         if self.partition not in self.SUPPORTED_PARTITIONS:
             raise ValueError(
                 f"Unsupported partition '{self.partition}'. "
                 f"Choose from: {sorted(self.SUPPORTED_PARTITIONS)}"
+            )
+        if self.partition == "pathological":
+            self.classes_per_client = validate_partitioner_int(
+                "classes_per_client", classes_per_client, min_value=1
             )
 
         # 1. Load the underlying base dataset and extract target labels
@@ -227,6 +218,18 @@ class FederatedDataset:
                     f"torchvision is required to download and load '{dataset}'. "
                     f"Please install torchvision or provide custom (X, y) data."
                 )
+
+            global tv_datasets
+            if tv_datasets is None:
+                try:
+                    import torchvision.datasets as _tv_datasets
+
+                    tv_datasets = _tv_datasets
+                except ImportError:
+                    raise ImportError(
+                        f"torchvision is required to download and load '{dataset}'. "
+                        f"Please install torchvision or provide custom (X, y) data."
+                    )
 
             ds_class_name = self.SUPPORTED_DATASETS[ds_key]
             ds_cls = getattr(tv_datasets, ds_class_name)
@@ -355,8 +358,17 @@ class FederatedDataset:
             Client dataset wrapper.
         """
         indices = self.get_client_indices(client_id)
-        if _HAS_TORCH and Subset is not None:
-            return Subset(self.base_dataset, indices)
+        if _HAS_TORCH:
+            global Subset
+            if Subset is None:
+                try:
+                    from torch.utils.data import Subset as _Subset
+
+                    Subset = _Subset
+                except ImportError:
+                    Subset = None
+            if Subset is not None:
+                return Subset(self.base_dataset, indices)
 
         # Fallback subset wrapper for non-torch environments
         class _NonTorchSubset:
@@ -397,11 +409,23 @@ class FederatedDataset:
         torch.utils.data.DataLoader
             Configured DataLoader for local client training.
         """
-        if not _HAS_TORCH or DataLoader is None:
+        if not _HAS_TORCH:
             raise ImportError(
                 "PyTorch is required to create a DataLoader. "
                 "Install torch (`pip install torch`) or use get_client_dataset() / get_client_indices()."
             )
+
+        global DataLoader
+        if DataLoader is None:
+            try:
+                from torch.utils.data import DataLoader as _DataLoader
+
+                DataLoader = _DataLoader
+            except ImportError:
+                raise ImportError(
+                    "PyTorch is required to create a DataLoader. "
+                    "Install torch (`pip install torch`) or use get_client_dataset() / get_client_indices()."
+                )
 
         client_ds = self.get_client_dataset(client_id)
         return DataLoader(client_ds, batch_size=batch_size, shuffle=shuffle, **kwargs)

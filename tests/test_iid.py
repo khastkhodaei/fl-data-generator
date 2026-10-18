@@ -54,6 +54,13 @@ def test_iid_partition_invalid_inputs():
     with pytest.raises(ValueError):
         iid_partition(labels, num_clients=10)
 
+    with pytest.raises(ValueError):
+        iid_partition(labels, num_clients=2.5)
+
+    with pytest.raises(ValueError):
+        iid_partition(labels, num_clients=True)
+
+
 
 def test_iid_partition_2d_labels_raises():
     labels = np.array([[0], [1], [2]])

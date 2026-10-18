@@ -252,3 +252,27 @@ def test_numpy_dataset_direct():
     sample_x, sample_y = ds[3]
     np.testing.assert_array_equal(sample_x, np.ones(3))
     assert sample_y == 3
+
+
+def test_federated_dataset_lazy_torch_import():
+    import subprocess
+    import sys
+
+    code = (
+        "import sys, fl_data_generator; "
+        "assert 'torch' not in sys.modules, 'torch is unexpectedly loaded!'; "
+        "assert 'torchvision' not in sys.modules, 'torchvision is unexpectedly loaded!'"
+    )
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert result.returncode == 0, f"Lazy import failed: {result.stderr}"
+
+
+def test_federated_dataset_num_clients_types():
+    X = np.ones((10, 2))
+    y = np.zeros(10, dtype=int)
+
+    with pytest.raises(ValueError):
+        FederatedDataset((X, y), num_clients=2.5)
+
+    with pytest.raises(ValueError):
+        FederatedDataset((X, y), num_clients=True)
