@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
+
 import numpy as np
 
 try:
