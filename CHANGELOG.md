@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed probe imports of `torch` and `torchvision` in `dataset.py` with `# noqa: F401` to ensure strict linter passing.
 - Enabled strict CI gating by removing `continue-on-error` from linter workflow.
-- Updated documentation and metadata naming in changelog: clarified `quantity_skew_partition` and `classes_per_client`.
+- Corrected inaccurate 0.1.0 release notes: the function is `quantity_skew_partition` (not `quantity_partition`), the parameter is `classes_per_client` (not `shards_per_client`), and `SVHN` is not a supported built-in dataset.
 
 ### Changed
 - Migrated project metadata to modern PEP 639 specification (`license = "MIT"` and `setuptools>=77`).
