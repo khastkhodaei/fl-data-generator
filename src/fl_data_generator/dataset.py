@@ -451,26 +451,38 @@ def __getattr__(name: str) -> Any:
     """Resolve lazy module-level exports (Dataset, DataLoader, Subset, tv_datasets)."""
     if name == "Dataset":
         if _HAS_TORCH:
-            from torch.utils.data import Dataset as _Dataset
+            try:
+                from torch.utils.data import Dataset as _Dataset
 
-            return _Dataset
+                return _Dataset
+            except ImportError:
+                return object
         return object
     if name == "DataLoader":
         if _HAS_TORCH:
-            from torch.utils.data import DataLoader as _DataLoader
+            try:
+                from torch.utils.data import DataLoader as _DataLoader
 
-            return _DataLoader
+                return _DataLoader
+            except ImportError:
+                return None
         return None
     if name == "Subset":
         if _HAS_TORCH:
-            from torch.utils.data import Subset as _Subset
+            try:
+                from torch.utils.data import Subset as _Subset
 
-            return _Subset
+                return _Subset
+            except ImportError:
+                return None
         return None
     if name == "tv_datasets":
         if _HAS_TORCHVISION:
-            import torchvision.datasets as _tv_datasets
+            try:
+                import torchvision.datasets as _tv_datasets
 
-            return _tv_datasets
+                return _tv_datasets
+            except ImportError:
+                return None
         return None
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
