@@ -120,3 +120,14 @@ def test_dirichlet_partition_float_labels_raises():
     with pytest.raises(ValueError, match=r"labels must be integer-valued"):
         dirichlet_partition(labels, num_clients=2)
 
+
+def test_dirichlet_partition_num_clients_exceeds_samples_raises():
+    labels = [0, 1, 2, 0]
+    num_clients = 10
+    with pytest.raises(
+        ValueError,
+        match=r"^num_clients \(10\) cannot exceed number of samples \(4\)$",
+    ):
+        dirichlet_partition(labels, num_clients=num_clients)
+
+
