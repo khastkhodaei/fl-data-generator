@@ -188,3 +188,19 @@ def test_pathological_partition_global_rng_untouched():
     assert state_before[2:] == state_after[2:]
 
 
+def test_pathological_partition_2d_labels_raises():
+    labels = np.array([[0], [1], [2]])
+    with pytest.raises(
+        ValueError,
+        match=r"labels must be 1-dimensional; consider using labels\.ravel\(\)",
+    ):
+        pathological_partition(labels, num_clients=2, classes_per_client=1)
+
+
+def test_pathological_partition_float_labels_raises():
+    labels = np.array([0.5, 1.2, 3.4])
+    with pytest.raises(ValueError, match=r"labels must be integer-valued"):
+        pathological_partition(labels, num_clients=2, classes_per_client=1)
+
+
+

@@ -2,6 +2,8 @@ from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
+from ._validation import validate_labels
+
 
 def hybrid_partition(
     labels: Union[Sequence, np.ndarray],
@@ -35,15 +37,21 @@ def hybrid_partition(
     -------
     dict of int to np.ndarray
         Mapping from client ID to array of assigned sample indices.
+
+    Raises
+    ------
+    ValueError
+        If labels is invalid (empty, not 1D, non-integer, or contains NaN/Inf).
+        If num_clients <= 0, alpha <= 0, or beta <= 0.
+        If num_clients exceeds num_samples.
     """
-    labels_arr = np.asarray(labels)
+    labels_arr = validate_labels(labels)
     num_samples = len(labels_arr)
 
     if num_clients <= 0:
         raise ValueError(f"num_clients must be positive, got {num_clients}")
-    if num_samples == 0:
-        raise ValueError("labels cannot be empty")
     if num_clients > num_samples:
+
         raise ValueError(
             f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"
         )

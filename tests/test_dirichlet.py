@@ -104,3 +104,19 @@ def test_dirichlet_partition_vector_alpha_nonpositive(alpha_vec):
     labels = np.repeat(np.arange(3), 30)
     with pytest.raises(ValueError, match="All alpha values must be positive"):
         dirichlet_partition(labels, num_clients=3, alpha=alpha_vec)
+
+
+def test_dirichlet_partition_2d_labels_raises():
+    labels = np.array([[0], [1], [2]])
+    with pytest.raises(
+        ValueError,
+        match=r"labels must be 1-dimensional; consider using labels\.ravel\(\)",
+    ):
+        dirichlet_partition(labels, num_clients=2)
+
+
+def test_dirichlet_partition_float_labels_raises():
+    labels = np.array([0.5, 1.2, 3.4])
+    with pytest.raises(ValueError, match=r"labels must be integer-valued"):
+        dirichlet_partition(labels, num_clients=2)
+

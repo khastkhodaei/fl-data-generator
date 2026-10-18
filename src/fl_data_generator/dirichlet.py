@@ -2,6 +2,8 @@ from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
+from ._validation import validate_labels
+
 
 def dirichlet_partition(
     labels: Union[Sequence, np.ndarray],
@@ -30,14 +32,20 @@ def dirichlet_partition(
     -------
     dict of int to np.ndarray
         Mapping from client ID to array of assigned sample indices.
+
+    Raises
+    ------
+    ValueError
+        If labels is invalid (empty, not 1D, non-integer, or contains NaN/Inf).
+        If num_clients <= 0 or alpha <= 0.
+        If alpha is a sequence and its length does not match num_clients.
     """
-    labels_arr = np.asarray(labels)
-    num_samples = len(labels_arr)
+    labels_arr = validate_labels(labels)
 
     if num_clients <= 0:
         raise ValueError(f"num_clients must be positive, got {num_clients}")
-    if num_samples == 0:
-        raise ValueError("labels cannot be empty")
+
+
 
     if isinstance(alpha, (int, float)):
         if alpha <= 0:
