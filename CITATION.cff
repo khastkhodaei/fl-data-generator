@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Khastkhodaei"
+    given-names: "Mostafa"
+    email: "dev.khastkhodaei@gmail.com"
+title: "fl-data-generator"
+version: 0.1.0
+date-released: 2026-10-18
+url: "https://github.com/khastkhodaei/fl-data-generator"
+repository-code: "https://github.com/khastkhodaei/fl-data-generator"
+license: MIT
+keywords:
+  - federated-learning
+  - data-partitioning
+  - non-iid
+  - dirichlet
+  - label-skew
+  - quantity-skew
+  - machine-learning
