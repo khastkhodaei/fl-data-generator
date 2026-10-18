@@ -90,3 +90,14 @@ def test_validate_labels_non_numeric_or_object() -> None:
 
     with pytest.raises((ValueError, TypeError)):
         validate_labels(np.array(["a", "b"], dtype=object))
+
+
+def test_validate_labels_complex_raises() -> None:
+    with pytest.raises(ValueError, match="complex"):
+        validate_labels(np.array([1 + 2j, 3 + 4j]))
+
+
+def test_validate_labels_overflow_raises() -> None:
+    with pytest.raises(ValueError, match="overflow|out of bounds|cannot fit"):
+        validate_labels([1e20, 2e20])
+

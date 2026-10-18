@@ -53,18 +53,22 @@ def quantity_skew_partition(
             f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"
         )
 
-    if isinstance(beta, (int, float)):
-        if beta <= 0:
+    if isinstance(beta, (bool, np.bool_)):
+        raise ValueError("beta cannot be a boolean")
+
+    if isinstance(beta, (int, float, np.number)) or (isinstance(beta, np.ndarray) and beta.ndim == 0):
+        beta_val = float(beta)
+        if not np.isfinite(beta_val) or beta_val <= 0:
             raise ValueError(f"beta must be positive, got {beta}")
-        beta_vec = np.repeat(float(beta), num_clients)
+        beta_vec = np.repeat(beta_val, num_clients)
     else:
         beta_vec = np.asarray(beta, dtype=float)
         if beta_vec.shape != (num_clients,):
             raise ValueError(
-                f"beta length must match num_clients ({num_clients}), got {len(beta_vec)}"
+                f"beta length must match num_clients ({num_clients}), got {beta_vec.size}"
             )
-        if (beta_vec <= 0).any():
-            raise ValueError("All beta values must be positive")
+        if (beta_vec <= 0).any() or not np.all(np.isfinite(beta_vec)):
+            raise ValueError("All beta values must be positive and finite")
 
     rng = np.random.default_rng(seed)
     shuffled_indices = rng.permutation(num_samples)

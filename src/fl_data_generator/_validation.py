@@ -21,8 +21,9 @@ def validate_labels(labels: Sequence | np.ndarray) -> np.ndarray:
     Raises
     ------
     ValueError
-        If labels is empty, not 1-dimensional, contains NaN or Inf, or
-        cannot be converted to integer values without loss of information.
+        If labels is empty, not 1-dimensional, contains NaN, Inf, or complex numbers,
+        values exceed int64 bounds, or cannot be converted to integer values without
+        loss of information.
     TypeError
         If labels elements cannot be converted to numeric values.
     """
@@ -33,6 +34,9 @@ def validate_labels(labels: Sequence | np.ndarray) -> np.ndarray:
 
     if arr.size == 0:
         raise ValueError("labels cannot be empty")
+
+    if np.iscomplexobj(arr):
+        raise ValueError("labels cannot contain complex numbers")
 
     if not np.issubdtype(arr.dtype, np.number):
         # Could be object array with strings or other non-numeric types
@@ -48,13 +52,19 @@ def validate_labels(labels: Sequence | np.ndarray) -> np.ndarray:
     if np.isinf(arr).any():
         raise ValueError("labels contains infinite values")
 
-    # Check if integer-valued
+    # Check if integer-valued and within int64 bounds
     if np.issubdtype(arr.dtype, np.floating):
         if not np.all(np.floor(arr) == arr):
             raise ValueError("labels must be integer-valued")
+        i64_info = np.iinfo(np.int64)
+        if np.any(arr < i64_info.min) or np.any(arr > i64_info.max):
+            raise ValueError("labels values out of bounds for int64")
         arr = arr.astype(np.int64)
     elif np.issubdtype(arr.dtype, np.integer):
         if arr.dtype != np.int64:
+            i64_info = np.iinfo(np.int64)
+            if np.any(arr < i64_info.min) or np.any(arr > i64_info.max):
+                raise ValueError("labels values out of bounds for int64")
             arr = arr.astype(np.int64)
 
     return arr
