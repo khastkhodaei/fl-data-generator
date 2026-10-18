@@ -1,7 +1,9 @@
 # fl-data-generator
 
+[![PyPI](https://img.shields.io/pypi/v/fl-data-generator.svg)](https://pypi.org/project/fl-data-generator/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/khastkhodaei/fl-data-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/khastkhodaei/fl-data-generator/actions)
 
 A lightweight, framework-agnostic Python library for **IID** and **Non-IID** data partitioning in **Federated Learning (FL)**.
 
@@ -28,22 +30,28 @@ Whether you are using PyTorch, TensorFlow, JAX, or federated frameworks like Flo
 
 ## Installation
 
-### From Source
+### From PyPI (Recommended)
 
 ```bash
-git clone https://github.com/khastkhodaei/fl-data-generator.git
-cd fl-data-generator
-pip install -e .
+pip install fl-data-generator
 ```
 
 ### With Optional Extras
 
 ```bash
 # Development dependencies (pytest, hypothesis, ruff, etc.)
-pip install -e ".[dev]"
+pip install "fl-data-generator[dev]"
 
 # Visualization support (matplotlib)
-pip install -e ".[viz]"
+pip install "fl-data-generator[viz]"
+```
+
+### From Source
+
+```bash
+git clone https://github.com/khastkhodaei/fl-data-generator.git
+cd fl-data-generator
+pip install -e .
 ```
 
 ---
@@ -186,10 +194,30 @@ fl-data-generator/
 │   ├── test_quantity.py
 │   ├── test_readme.py
 │   └── test_validation.py
-├── pyproject.toml               # Package build configuration & Ruff settings
+├── CHANGELOG.md                 # Release changelog (Keep a Changelog)
+├── CITATION.cff                 # Citation metadata
 ├── LICENSE                      # MIT License
-└── README.md                    # Project documentation
+├── README.md                    # Project documentation
+└── pyproject.toml               # Package build configuration & Ruff settings
 ```
+
+---
+
+## Citation
+
+If you use `fl-data-generator` in your research or benchmarks, please cite it using:
+
+```bibtex
+@software{khastkhodaei2026fldatagenerator,
+  author = {Khastkhodaei, Mostafa},
+  title = {fl-data-generator: A Lightweight Federated Learning Data Partitioning Library},
+  url = {https://github.com/khastkhodaei/fl-data-generator},
+  version = {0.1.0},
+  year = {2026}
+}
+```
+
+You can also use the citation metadata provided in [CITATION.cff](CITATION.cff).
 
 ---
 
