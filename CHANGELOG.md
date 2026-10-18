@@ -12,13 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed silent sample corruption and empty client assignments in `hybrid_partition` by strictly validating that `alpha` and `beta` are finite, positive, non-boolean scalars (rejecting `NaN`, `Inf`, booleans, and sequences).
 - Fixed float64 int64 overflow check in `validate_labels` for values exceeding `int64` bounds (such as `2.0**63` and `< -2.0**63`).
-- Fixed seed-dependent spurious `ValueError` in `pathological_partition` by deterministically validating class sample capacities while preserving the RNG shuffle sequence and exact backward compatibility for reproducible seeds.
+- Fixed seed-dependent spurious `ValueError` and prevented empty clients in `pathological_partition` on imbalanced distributions by checking global multiset feasibility before repairing invalid random permutations, while preserving exact 0.1.2 parity on all previously valid seeds.
 - Unified integer parameter validation across all partitioners (`num_clients`, `classes_per_client`, `min_size`, `max_retries`) using `operator.index` and accepting NumPy integer scalars while rejecting `bool` and `np.bool_`.
 - Made PyTorch and TorchVision imports lazy in `dataset.py`, dramatically cutting top-level `import fl_data_generator` initialization time (from ~4.3s to ~0.02s) and memory footprint when PyTorch is not needed.
 
 ### Changed
 - Rejection of boolean values (`bool`, `np.bool_`) and non-integer floats across integer arguments (`num_clients`, `classes_per_client`, `min_size`, `max_retries`) now consistently raises `ValueError`.
-- `NumpyDataset` is now a standalone duck-typed class that dynamically inherits from `torch.utils.data.Dataset` when PyTorch is imported, preserving compatibility with PyTorch Lightning and Flower while keeping imports lazy.
+- `NumpyDataset` is now a standalone duck-typed class that dynamically inherits from `torch.utils.data.Dataset` via a picklable memoized subclass when PyTorch is imported, preserving full serialization support for multi-worker `DataLoader(num_workers > 0)`.
 - Module-level attributes `Dataset`, `DataLoader`, `Subset`, and `tv_datasets` in `fl_data_generator.dataset` are now resolved lazily via PEP 562 `__getattr__`.
 
 ## [0.1.2] - 2026-10-18
@@ -46,10 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core partitioning strategies:
   - `iid_partition`: Independent and Identically Distributed partitioning across clients.
   - `dirichlet_partition`: Dirichlet distribution-based label skew partitioning with Dirichlet resampling, validation of `num_clients <= num_samples`, and `min_size` / `max_retries` constraints.
-  - `pathological_partition`: Non-IID label skew assigning a fixed number of classes per client with strict validation of `shards_per_client` and client capacity.
-  - `quantity_partition`: Dirichlet distribution-based quantity skew for uneven sample size allocations.
+  - `pathological_partition`: Non-IID label skew assigning a fixed number of classes per client with strict validation of `classes_per_client` and client capacity.
+  - `quantity_skew_partition`: Dirichlet distribution-based quantity skew for uneven sample size allocations.
   - `hybrid_partition`: Combined label and quantity skew partitioning (experimental status, with scalar `alpha`/`beta` validation).
-- `FederatedDataset` wrapper supporting PyTorch dataset compatibility, lazy loading, and built-in datasets (`MNIST`, `CIFAR10`, `CIFAR100`, `FashionMNIST`, `SVHN`) with pure Python / NumPy fallback (`_NonTorchSubset`) when PyTorch is unavailable.
+- `FederatedDataset` wrapper supporting PyTorch dataset compatibility, lazy loading, and built-in datasets (`MNIST`, `CIFAR10`, `CIFAR100`, `FashionMNIST`) with pure Python / NumPy fallback (`_NonTorchSubset`) when PyTorch is unavailable.
 - Comprehensive test suite covering edge cases, property-based tests via Hypothesis, and runnable documentation tests.
 - CI/CD workflow testing Python matrix 3.9 through 3.13 and lowest-direct dependency resolution with `uv`.
 

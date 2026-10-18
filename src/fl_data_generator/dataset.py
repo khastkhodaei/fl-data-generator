@@ -14,12 +14,16 @@ _HAS_TORCH = importlib.util.find_spec("torch") is not None
 _HAS_TORCHVISION = importlib.util.find_spec("torchvision") is not None
 
 
+_TORCH_DS: Optional[type] = None
+
+
 class NumpyDataset:
     """Lightweight dataset wrapper for NumPy arrays or tensor tuples.
 
     When PyTorch is imported, instances of NumpyDataset automatically inherit
     from `torch.utils.data.Dataset` for seamless integration with PyTorch
-    ecosystem tools (e.g., DataLoaders, PyTorch Lightning, Flower).
+    ecosystem tools (e.g., DataLoaders, PyTorch Lightning, Flower) while
+    remaining fully picklable for multi-worker DataLoaders.
 
     Parameters
     ----------
@@ -33,15 +37,26 @@ class NumpyDataset:
         Transformation applied to target labels.
     """
 
+    _TorchSubclass: Optional[type] = None
+
     def __new__(cls, *args: Any, **kwargs: Any) -> Any:
         import sys
 
-        if "torch" in sys.modules:
-            import torch.utils.data
+        if "torch" in sys.modules and not issubclass(cls, sys.modules["torch"].utils.data.Dataset):
+            global _TORCH_DS
+            if _TORCH_DS is None:
+                import torch.utils.data
 
-            if not issubclass(cls, torch.utils.data.Dataset):
-                cls_torch = type("NumpyDataset", (cls, torch.utils.data.Dataset), {})
-                return super().__new__(cls_torch)
+                _TORCH_DS = type(
+                    "NumpyDataset",
+                    (cls, torch.utils.data.Dataset),
+                    {
+                        "__module__": __name__,
+                        "__qualname__": "NumpyDataset._TorchSubclass",
+                    },
+                )
+                cls._TorchSubclass = _TORCH_DS
+            return super().__new__(_TORCH_DS)
         return super().__new__(cls)
 
     def __init__(

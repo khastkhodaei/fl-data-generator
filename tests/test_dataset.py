@@ -271,6 +271,8 @@ def test_federated_dataset_lazy_torch_import():
 
 
 def test_numpy_dataset_torch_interop():
+    import pickle
+
     torch = pytest.importorskip("torch")
 
     X = np.ones((10, 3))
@@ -278,6 +280,10 @@ def test_numpy_dataset_torch_interop():
     ds = NumpyDataset(X, y)
 
     assert isinstance(ds, torch.utils.data.Dataset)
+    pickled = pickle.dumps(ds)
+    loaded = pickle.loads(pickled)
+    assert len(loaded) == 10
+    assert isinstance(loaded, torch.utils.data.Dataset)
 
 
 def test_federated_dataset_num_clients_types():

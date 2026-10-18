@@ -83,26 +83,31 @@ def pathological_partition(
     counts += base
     counts[:rem] += 1
 
-    # Check overall feasibility against the multiset of available shard counts:
-    # Sort class sample counts and counts to ensure classes with more samples get higher or equal shard requests
-    class_sample_counts = np.array([int(np.count_nonzero(labels_arr == c)) for c in unique_classes])
-    
-    # Sort classes by sample count descending, so larger classes receive the larger shard counts (base + 1)
-    sorted_by_samples = np.argsort(-class_sample_counts)
-    assigned_counts = np.zeros(num_classes, dtype=int)
-    assigned_counts[sorted_by_samples] = counts  # counts is already sorted descending [base+1..., base...]
+    class_sample_counts = np.array(
+        [int(np.count_nonzero(labels_arr == c)) for c in unique_classes]
+    )
+    rng.shuffle(counts)  # Preserves exact RNG stream and permutation of <=0.1.2
 
-    # If even the most favorable assignment cannot satisfy shard requirements, raise deterministic ValueError
-    for c_idx, cls_val in enumerate(unique_classes):
-        sample_cnt = class_sample_counts[c_idx]
-        needed_shards = assigned_counts[c_idx]
-        if sample_cnt < needed_shards:
-            raise ValueError(
-                f"Class '{cls_val}' has {sample_cnt} sample(s), which is fewer than "
-                f"the assigned {needed_shards} shard(s). Cannot partition without producing empty shards."
-            )
-    counts = assigned_counts
-    rng.shuffle(counts)  # stream-preserving: keeps RNG state sequence identical to <=0.1.2
+    # Check overall data-level feasibility (independent of seed/permutation)
+    need_desc = np.sort(counts)[::-1]
+    have_desc = np.sort(class_sample_counts)[::-1]
+    if np.any(have_desc < need_desc):
+        order_asc = np.argsort(class_sample_counts)
+        bad_idx = order_asc[0]
+        cls_val = unique_classes[bad_idx]
+        sample_cnt = class_sample_counts[bad_idx]
+        needed_shards = int(counts[bad_idx])
+        raise ValueError(
+            f"Class '{cls_val}' has {sample_cnt} sample(s), which is fewer than "
+            f"the assigned {needed_shards} shard(s). Cannot partition without producing empty shards."
+        )
+
+    # If this specific random permutation cannot be satisfied, deterministically repair it
+    if np.any(class_sample_counts < counts):
+        order = np.argsort(-class_sample_counts)
+        fixed = np.empty_like(counts)
+        fixed[order] = need_desc
+        counts = fixed
 
 
     client_classes = [set() for _ in range(num_clients)]

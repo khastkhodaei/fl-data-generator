@@ -210,4 +210,21 @@ def test_pathological_partition_seed_compatibility_regression():
     np.testing.assert_array_equal(res[0][:5], expected_client_0_prefix)
 
 
+def test_pathological_partition_imbalanced_no_empty_client():
+    # Minimal repro case: 1 sample in class 0, 20 samples in class 1
+    labels = np.array([0] + [1] * 20)
+    res = pathological_partition(labels, num_clients=3, classes_per_client=1, seed=3)
+    assert all(len(indices) > 0 for indices in res.values()), "Empty client produced!"
+    assert sorted([len(indices) for indices in res.values()]) == [1, 10, 10]
+
+    # Larger imbalanced case matching 0.1.2 parity
+    class_sizes = [28, 38, 11, 24, 2]
+    large_labels = []
+    for c_idx, sz in enumerate(class_sizes):
+        large_labels.extend([c_idx] * sz)
+    res_large = pathological_partition(large_labels, num_clients=11, classes_per_client=1, seed=0)
+    expected_sizes = [8, 1, 5, 19, 19, 1, 6, 14, 8, 14, 8]
+    assert [len(res_large[cid]) for cid in range(11)] == expected_sizes
+
+
 

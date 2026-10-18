@@ -44,6 +44,10 @@ def assert_partition_invariants(client_dict, num_samples, pre_state, partition_f
     assert len(all_indices) == num_samples, f"Total allocated {len(all_indices)} != {num_samples}"
     assert set(all_indices) == set(range(num_samples)), "Allocated indices do not match range(num_samples)"
 
+    # 4b. No empty client produced (unless min_size=0 explicitly allowed)
+    if kwargs.get("min_size", 1) != 0:
+        assert all(len(arr) > 0 for arr in client_dict.values()), "Empty client produced"
+
     # 5. Same seed -> same output
     if seed is not None:
         second_dict = partition_fn(*args, seed=seed, **kwargs)
