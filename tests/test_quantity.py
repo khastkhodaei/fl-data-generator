@@ -98,3 +98,13 @@ def test_quantity_skew_partition_float_labels_raises():
     with pytest.raises(ValueError, match=r"labels must be integer-valued"):
         quantity_skew_partition(labels, num_clients=2)
 
+
+def test_quantity_skew_partition_numpy_scalar_beta():
+    labels = np.array([0, 1] * 10)
+    # Should accept np.float32 and 0-d np.array without TypeError
+    res1 = quantity_skew_partition(labels, 2, beta=np.float32(0.5), seed=42)
+    assert len(res1) == 2
+    res2 = quantity_skew_partition(labels, 2, beta=np.array(0.5), seed=42)
+    assert len(res2) == 2
+
+

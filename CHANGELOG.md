@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-18
+
+### Fixed
+- Fixed `TypeError: len() of unsized object` when passing NumPy scalars (e.g. `np.float32`, 0-d arrays) as `alpha` in `dirichlet_partition` or `beta` in `quantity_skew_partition`.
+- Hardened `validate_labels` to explicitly reject complex numbers (`complex64`, `complex128`).
+- Prevented silent integer overflow in `validate_labels` for float inputs exceeding `int64` bounds.
+
 ## [0.1.1] - 2026-10-18
 
 ### Fixed
@@ -32,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite covering edge cases, property-based tests via Hypothesis, and runnable documentation tests.
 - CI/CD workflow testing Python matrix 3.9 through 3.13 and lowest-direct dependency resolution with `uv`.
 
-[Unreleased]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/khastkhodaei/fl-data-generator/releases/tag/v0.1.0

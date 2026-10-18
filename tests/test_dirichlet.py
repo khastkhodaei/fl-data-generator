@@ -195,4 +195,13 @@ def test_dirichlet_partition_default_min_size_eliminates_empty_clients():
     assert sum(sizes) == len(labels)
 
 
+def test_dirichlet_partition_numpy_scalar_alpha():
+    labels = np.array([0, 1] * 10)
+    res1 = dirichlet_partition(labels, 2, alpha=np.float32(0.5), seed=42)
+    assert len(res1) == 2
+    res2 = dirichlet_partition(labels, 2, alpha=np.array(0.5), seed=42)
+    assert len(res2) == 2
+
+
+
 

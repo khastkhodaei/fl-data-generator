@@ -72,18 +72,22 @@ def dirichlet_partition(
     if not isinstance(max_retries, int) or isinstance(max_retries, bool) or max_retries <= 0:
         raise ValueError(f"max_retries must be a positive integer, got {max_retries}")
 
-    if isinstance(alpha, (int, float)):
-        if alpha <= 0:
+    if isinstance(alpha, (bool, np.bool_)):
+        raise ValueError("alpha cannot be a boolean")
+
+    if isinstance(alpha, (int, float, np.number)) or (isinstance(alpha, np.ndarray) and alpha.ndim == 0):
+        alpha_val = float(alpha)
+        if not np.isfinite(alpha_val) or alpha_val <= 0:
             raise ValueError(f"alpha must be positive, got {alpha}")
-        alpha_vec = np.repeat(float(alpha), num_clients)
+        alpha_vec = np.repeat(alpha_val, num_clients)
     else:
         alpha_vec = np.asarray(alpha, dtype=float)
         if alpha_vec.shape != (num_clients,):
             raise ValueError(
-                f"alpha length must match num_clients ({num_clients}), got {len(alpha_vec)}"
+                f"alpha length must match num_clients ({num_clients}), got {alpha_vec.size}"
             )
-        if (alpha_vec <= 0).any():
-            raise ValueError("All alpha values must be positive")
+        if (alpha_vec <= 0).any() or not np.all(np.isfinite(alpha_vec)):
+            raise ValueError("All alpha values must be positive and finite")
 
     rng = np.random.default_rng(seed)
     unique_classes = np.unique(labels_arr)
