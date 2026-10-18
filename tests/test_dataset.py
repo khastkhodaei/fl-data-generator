@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from fl_data_generator import FederatedDataset, NumpyDataset
+from fl_data_generator import FederatedDataset
 
 try:
     import torch
