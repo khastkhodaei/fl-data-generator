@@ -38,12 +38,18 @@ def dirichlet_partition(
     ValueError
         If labels is invalid (empty, not 1D, non-integer, or contains NaN/Inf).
         If num_clients <= 0 or alpha <= 0.
+        If num_clients exceeds num_samples.
         If alpha is a sequence and its length does not match num_clients.
     """
     labels_arr = validate_labels(labels)
+    num_samples = len(labels_arr)
 
     if num_clients <= 0:
         raise ValueError(f"num_clients must be positive, got {num_clients}")
+    if num_clients > num_samples:
+        raise ValueError(
+            f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"
+        )
 
 
 
