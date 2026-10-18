@@ -5,7 +5,8 @@ from fl_data_generator import quantity_skew_partition
 
 
 def test_quantity_skew_partition_all_indices_allocated():
-    labels = np.random.randint(0, 5, size=500)
+    rng = np.random.default_rng(600)
+    labels = rng.integers(0, 5, size=500)
     num_clients = 8
     client_dict = quantity_skew_partition(labels, num_clients=num_clients, beta=0.5, seed=42)
 

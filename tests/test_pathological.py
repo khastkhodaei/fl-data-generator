@@ -22,7 +22,8 @@ def test_pathological_partition_classes_per_client():
 
 
 def test_pathological_partition_all_indices_covered():
-    labels = np.random.randint(0, 6, size=300)
+    rng = np.random.default_rng(500)
+    labels = rng.integers(0, 6, size=300)
     num_clients = 6
     classes_per_client = 2
 

@@ -5,7 +5,8 @@ from fl_data_generator import iid_partition
 
 
 def test_iid_partition_sample_count():
-    labels = np.random.randint(0, 10, size=100)
+    rng = np.random.default_rng(400)
+    labels = rng.integers(0, 10, size=100)
     num_clients = 10
     client_dict = iid_partition(labels, num_clients, seed=42)
 

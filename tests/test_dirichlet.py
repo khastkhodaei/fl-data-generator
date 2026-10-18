@@ -5,7 +5,8 @@ from fl_data_generator import dirichlet_partition
 
 
 def test_dirichlet_partition_all_indices_allocated():
-    labels = np.random.randint(0, 5, size=200)
+    rng = np.random.default_rng(100)
+    labels = rng.integers(0, 5, size=200)
     num_clients = 8
     client_dict = dirichlet_partition(labels, num_clients, alpha=0.5, seed=42)
 
@@ -62,7 +63,8 @@ def test_dirichlet_partition_skew_levels():
 
 
 def test_dirichlet_partition_vector_alpha():
-    labels = np.random.randint(0, 3, size=90)
+    rng = np.random.default_rng(101)
+    labels = rng.integers(0, 3, size=90)
     alpha_vec = [0.1, 0.5, 1.0]
     client_dict = dirichlet_partition(labels, num_clients=3, alpha=alpha_vec, seed=42)
 
@@ -88,3 +90,17 @@ def test_dirichlet_partition_invalid_inputs():
 
     with pytest.raises(ValueError):
         dirichlet_partition(labels, num_clients=2, alpha=[0.5, 0.5, 0.5])
+
+
+@pytest.mark.parametrize(
+    "alpha_vec",
+    [
+        [0.5, 0.0, 0.5],   # zero value
+        [0.5, -1.0, 0.5],  # negative value
+    ],
+)
+def test_dirichlet_partition_vector_alpha_nonpositive(alpha_vec):
+    """Vector alpha containing 0 or negative value must raise ValueError (covers line 52)."""
+    labels = np.repeat(np.arange(3), 30)
+    with pytest.raises(ValueError, match="All alpha values must be positive"):
+        dirichlet_partition(labels, num_clients=3, alpha=alpha_vec)
