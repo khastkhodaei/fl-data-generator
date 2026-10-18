@@ -227,4 +227,10 @@ def test_pathological_partition_imbalanced_no_empty_client():
     assert [len(res_large[cid]) for cid in range(11)] == expected_sizes
 
 
-
+def test_pathological_partition_repair_branch_covered():
+    # Covers deterministic repair branch where random permutation placed larger shard counts
+    # on classes with fewer samples (would raise ValueError in 0.1.2 or produce empty clients).
+    labels = np.concatenate([np.full(s, i) for i, s in enumerate([26, 9, 28, 1])])
+    res = pathological_partition(labels, num_clients=3, classes_per_client=2, seed=2)
+    assert [len(res[c]) for c in range(3)] == [23, 14, 27]
+    assert all(len(v) > 0 for v in res.values())

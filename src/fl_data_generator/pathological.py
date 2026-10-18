@@ -92,11 +92,12 @@ def pathological_partition(
     need_desc = np.sort(counts)[::-1]
     have_desc = np.sort(class_sample_counts)[::-1]
     if np.any(have_desc < need_desc):
-        order_asc = np.argsort(class_sample_counts)
-        bad_idx = order_asc[0]
+        failing_pos = int(np.where(have_desc < need_desc)[0][0])
+        order_desc = np.argsort(-class_sample_counts)
+        bad_idx = order_desc[failing_pos]
         cls_val = unique_classes[bad_idx]
         sample_cnt = class_sample_counts[bad_idx]
-        needed_shards = int(counts[bad_idx])
+        needed_shards = int(need_desc[failing_pos])
         raise ValueError(
             f"Class '{cls_val}' has {sample_cnt} sample(s), which is fewer than "
             f"the assigned {needed_shards} shard(s). Cannot partition without producing empty shards."

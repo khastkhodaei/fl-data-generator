@@ -14,7 +14,13 @@ _HAS_TORCH = importlib.util.find_spec("torch") is not None
 _HAS_TORCHVISION = importlib.util.find_spec("torchvision") is not None
 
 
-_TORCH_DS: Optional[type] = None
+_TORCH_SUBCLASSES: Dict[type, type] = {}
+
+
+def _reconstruct_numpy_dataset(cls: type, state: Dict[str, Any]) -> Any:
+    obj = cls.__new__(cls)
+    obj.__dict__.update(state)
+    return obj
 
 
 class NumpyDataset:
@@ -42,22 +48,35 @@ class NumpyDataset:
     def __new__(cls, *args: Any, **kwargs: Any) -> Any:
         import sys
 
-        if "torch" in sys.modules and not issubclass(cls, sys.modules["torch"].utils.data.Dataset):
-            global _TORCH_DS
-            if _TORCH_DS is None:
-                import torch.utils.data
+        if "torch" in sys.modules:
+            torch_ds = sys.modules["torch"].utils.data.Dataset
+            if not issubclass(cls, torch_ds):
+                subclass = _TORCH_SUBCLASSES.get(cls)
+                if subclass is None:
+                    import torch.utils.data
 
-                _TORCH_DS = type(
-                    "NumpyDataset",
-                    (cls, torch.utils.data.Dataset),
-                    {
-                        "__module__": __name__,
-                        "__qualname__": "NumpyDataset._TorchSubclass",
-                    },
-                )
-                cls._TorchSubclass = _TORCH_DS
-            return super().__new__(_TORCH_DS)
-        return super().__new__(cls)
+                    subclass = type(
+                        f"{cls.__name__}._TorchSubclass",
+                        (cls, torch.utils.data.Dataset),
+                        {
+                            "__module__": cls.__module__,
+                            "__qualname__": f"{cls.__qualname__}._TorchSubclass",
+                            "_is_fl_torch_subclass": True,
+                        },
+                    )
+                    _TORCH_SUBCLASSES[cls] = subclass
+                    try:
+                        setattr(cls, "_TorchSubclass", subclass)
+                    except (AttributeError, TypeError):
+                        pass
+                return object.__new__(subclass)
+        return object.__new__(cls)
+
+    def __reduce__(self) -> Any:
+        cls = self.__class__
+        if getattr(cls, "_is_fl_torch_subclass", False):
+            cls = cls.__bases__[0]
+        return (_reconstruct_numpy_dataset, (cls, self.__dict__))
 
     def __init__(
         self,

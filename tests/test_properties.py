@@ -179,10 +179,11 @@ def test_pathological_partition_properties(num_classes, num_clients, classes_per
         num_clients = (num_classes + classes_per_client - 1) // classes_per_client
         total_slots = num_clients * classes_per_client
 
-    # Ensure every class has at least (total_slots // num_classes + 2) samples
+    # Ensure every class has at least (total_slots // num_classes + 2) samples to remain feasible
     min_per_class = (total_slots // num_classes) + 2
-    samples_per_class = min_per_class + 5
-    labels = np.repeat(np.arange(num_classes), samples_per_class)
+    rng = np.random.default_rng(seed)
+    class_sizes = [min_per_class + int(rng.integers(1, 40)) for _ in range(num_classes)]
+    labels = np.concatenate([np.full(sz, c_idx) for c_idx, sz in enumerate(class_sizes)])
     num_samples = len(labels)
 
     pre_state = np.random.get_state()
