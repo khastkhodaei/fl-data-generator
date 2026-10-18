@@ -2,6 +2,8 @@ from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
+from ._validation import validate_labels
+
 
 def pathological_partition(
     labels: Union[Sequence, np.ndarray],
@@ -35,14 +37,14 @@ def pathological_partition(
     Raises
     ------
     ValueError
+        If labels is invalid (empty, not 1D, non-integer, or contains NaN/Inf).
         If num_clients <= 0 or classes_per_client <= 0.
-        If labels is empty.
         If classes_per_client exceeds the number of unique classes.
         If total client slots is less than the number of unique classes.
         If total samples is less than total class shards.
         If any class has fewer samples than the number of shards assigned to it.
     """
-    labels_arr = np.asarray(labels)
+    labels_arr = validate_labels(labels)
     num_samples = len(labels_arr)
 
     if num_clients <= 0:
@@ -51,8 +53,7 @@ def pathological_partition(
         raise ValueError(
             f"classes_per_client must be positive, got {classes_per_client}"
         )
-    if num_samples == 0:
-        raise ValueError("labels cannot be empty")
+
 
     unique_classes = np.unique(labels_arr)
     num_classes = len(unique_classes)

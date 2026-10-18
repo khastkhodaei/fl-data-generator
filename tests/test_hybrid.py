@@ -98,3 +98,19 @@ def test_hybrid_partition_invalid_inputs():
 
     with pytest.raises(ValueError):
         hybrid_partition(labels, num_clients=10)
+
+
+def test_hybrid_partition_2d_labels_raises():
+    labels = np.array([[0], [1], [2]])
+    with pytest.raises(
+        ValueError,
+        match=r"labels must be 1-dimensional; consider using labels\.ravel\(\)",
+    ):
+        hybrid_partition(labels, num_clients=2)
+
+
+def test_hybrid_partition_float_labels_raises():
+    labels = np.array([0.5, 1.2, 3.4])
+    with pytest.raises(ValueError, match=r"labels must be integer-valued"):
+        hybrid_partition(labels, num_clients=2)
+

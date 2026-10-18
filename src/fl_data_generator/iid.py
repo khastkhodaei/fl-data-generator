@@ -2,6 +2,8 @@ from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
+from ._validation import validate_labels
+
 
 def iid_partition(
     labels: Union[Sequence, np.ndarray],
@@ -23,8 +25,16 @@ def iid_partition(
     -------
     dict of int to np.ndarray
         Mapping from client ID to array of assigned sample indices.
+
+    Raises
+    ------
+    ValueError
+        If labels is invalid (empty, not 1D, non-integer, or contains NaN/Inf).
+        If num_clients <= 0 or num_clients > num_samples.
     """
-    num_samples = len(labels)
+    labels_arr = validate_labels(labels)
+    num_samples = len(labels_arr)
+
     if num_clients <= 0:
         raise ValueError(f"num_clients must be positive, got {num_clients}")
     if num_clients > num_samples:
