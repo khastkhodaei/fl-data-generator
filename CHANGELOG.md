@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-18
+
+### Fixed
+- Fixed silent sample corruption and empty client assignments in `hybrid_partition` by strictly validating that `alpha` and `beta` are finite, positive, non-boolean scalars (rejecting `NaN`, `Inf`, booleans, and sequences).
+- Fixed float64 int64 overflow check in `validate_labels` for values exceeding `int64` bounds (such as `2.0**63` and `< -2.0**63`).
+- Fixed seed-dependent spurious `ValueError` in `pathological_partition` by deterministically matching class sample capacities before shuffling.
+- Unified integer parameter validation across all partitioners (`num_clients`, `classes_per_client`) using `operator.index` and rejecting `bool` and `np.bool_`.
+- Made PyTorch and TorchVision imports lazy in `dataset.py`, dramatically cutting top-level `import fl_data_generator` initialization time and module footprint when PyTorch is not needed.
+
 ## [0.1.2] - 2026-10-18
 
 ### Fixed
@@ -39,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite covering edge cases, property-based tests via Hypothesis, and runnable documentation tests.
 - CI/CD workflow testing Python matrix 3.9 through 3.13 and lowest-direct dependency resolution with `uv`.
 
-[Unreleased]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/khastkhodaei/fl-data-generator/releases/tag/v0.1.0

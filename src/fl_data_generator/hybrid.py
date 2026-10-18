@@ -2,7 +2,7 @@ from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
-from ._validation import validate_labels
+from ._validation import validate_labels, validate_partitioner_int
 
 
 def hybrid_partition(
@@ -56,22 +56,31 @@ def hybrid_partition(
     labels_arr = validate_labels(labels)
     num_samples = len(labels_arr)
 
-    if num_clients <= 0:
-        raise ValueError(f"num_clients must be positive, got {num_clients}")
+    num_clients = validate_partitioner_int("num_clients", num_clients, min_value=1)
     if num_clients > num_samples:
         raise ValueError(
             f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"
         )
 
-    if isinstance(alpha, (Sequence, np.ndarray)) or np.ndim(alpha) > 0 or not isinstance(alpha, (int, float, np.number)) or isinstance(alpha, bool):
+    if isinstance(alpha, (bool, np.bool_)):
+        raise ValueError("alpha cannot be a boolean")
+    if isinstance(alpha, (int, float, np.number)) or (isinstance(alpha, np.ndarray) and alpha.ndim == 0):
+        alpha_val = float(alpha)
+        if not np.isfinite(alpha_val) or alpha_val <= 0:
+            raise ValueError(f"alpha must be positive, got {alpha}")
+        alpha = alpha_val
+    else:
         raise ValueError(f"alpha must be a scalar positive number, got {alpha}")
-    if alpha <= 0:
-        raise ValueError(f"alpha must be positive, got {alpha}")
 
-    if isinstance(beta, (Sequence, np.ndarray)) or np.ndim(beta) > 0 or not isinstance(beta, (int, float, np.number)) or isinstance(beta, bool):
+    if isinstance(beta, (bool, np.bool_)):
+        raise ValueError("beta cannot be a boolean")
+    if isinstance(beta, (int, float, np.number)) or (isinstance(beta, np.ndarray) and beta.ndim == 0):
+        beta_val = float(beta)
+        if not np.isfinite(beta_val) or beta_val <= 0:
+            raise ValueError(f"beta must be positive, got {beta}")
+        beta = beta_val
+    else:
         raise ValueError(f"beta must be a scalar positive number, got {beta}")
-    if beta <= 0:
-        raise ValueError(f"beta must be positive, got {beta}")
 
     rng = np.random.default_rng(seed)
     unique_classes = np.unique(labels_arr)

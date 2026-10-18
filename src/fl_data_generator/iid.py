@@ -2,7 +2,7 @@ from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
-from ._validation import validate_labels
+from ._validation import validate_labels, validate_partitioner_int
 
 
 def iid_partition(
@@ -35,8 +35,7 @@ def iid_partition(
     labels_arr = validate_labels(labels)
     num_samples = len(labels_arr)
 
-    if num_clients <= 0:
-        raise ValueError(f"num_clients must be positive, got {num_clients}")
+    num_clients = validate_partitioner_int("num_clients", num_clients, min_value=1)
     if num_clients > num_samples:
         raise ValueError(
             f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"

@@ -129,3 +129,13 @@ def test_hybrid_partition_sequence_beta_raises_value_error(invalid_beta):
         hybrid_partition(labels, num_clients=2, beta=invalid_beta)
 
 
+@pytest.mark.parametrize("val", [float("nan"), float("inf"), float("-inf"), True, False])
+def test_hybrid_partition_nan_inf_bool_raises(val):
+    labels = [0, 1, 0, 1]
+    with pytest.raises(ValueError):
+        hybrid_partition(labels, num_clients=2, alpha=val)
+    with pytest.raises(ValueError):
+        hybrid_partition(labels, num_clients=2, beta=val)
+
+
+

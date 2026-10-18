@@ -2,7 +2,7 @@ from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
-from ._validation import validate_labels
+from ._validation import validate_labels, validate_partitioner_int
 
 
 def pathological_partition(
@@ -47,12 +47,10 @@ def pathological_partition(
     labels_arr = validate_labels(labels)
     num_samples = len(labels_arr)
 
-    if num_clients <= 0:
-        raise ValueError(f"num_clients must be positive, got {num_clients}")
-    if classes_per_client <= 0:
-        raise ValueError(
-            f"classes_per_client must be positive, got {classes_per_client}"
-        )
+    num_clients = validate_partitioner_int("num_clients", num_clients, min_value=1)
+    classes_per_client = validate_partitioner_int(
+        "classes_per_client", classes_per_client, min_value=1
+    )
 
 
     unique_classes = np.unique(labels_arr)
@@ -84,17 +82,26 @@ def pathological_partition(
     rem = remaining % num_classes
     counts += base
     counts[:rem] += 1
-    rng.shuffle(counts)
 
-    # Validate that every class has at least as many samples as assigned shards
+    # Check overall feasibility against the multiset of available shard counts:
+    # Sort class sample counts and counts to ensure classes with more samples get higher or equal shard requests
+    class_sample_counts = np.array([int(np.count_nonzero(labels_arr == c)) for c in unique_classes])
+    
+    # Sort classes by sample count descending, so larger classes receive the larger shard counts (base + 1)
+    sorted_by_samples = np.argsort(-class_sample_counts)
+    assigned_counts = np.zeros(num_classes, dtype=int)
+    assigned_counts[sorted_by_samples] = counts  # counts is already sorted descending [base+1..., base...]
+
+    # If even the most favorable assignment cannot satisfy shard requirements, raise deterministic ValueError
     for c_idx, cls_val in enumerate(unique_classes):
-        class_sample_count = int(np.count_nonzero(labels_arr == cls_val))
-        needed_shards = int(counts[c_idx])
-        if class_sample_count < needed_shards:
+        sample_cnt = class_sample_counts[c_idx]
+        needed_shards = assigned_counts[c_idx]
+        if sample_cnt < needed_shards:
             raise ValueError(
-                f"Class '{cls_val}' has {class_sample_count} sample(s), which is fewer than "
+                f"Class '{cls_val}' has {sample_cnt} sample(s), which is fewer than "
                 f"the assigned {needed_shards} shard(s). Cannot partition without producing empty shards."
             )
+    counts = assigned_counts
 
 
     client_classes = [set() for _ in range(num_clients)]

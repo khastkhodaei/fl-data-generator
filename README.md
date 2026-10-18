@@ -219,7 +219,7 @@ If you use `fl-data-generator` in your research or benchmarks, please cite it us
   author = {Khastkhodaei, Mostafa},
   title = {fl-data-generator: A Lightweight Federated Learning Data Partitioning Library},
   url = {https://github.com/khastkhodaei/fl-data-generator},
-  version = {0.1.2},
+  version = {0.1.3},
   year = {2026}
 }
 ```
