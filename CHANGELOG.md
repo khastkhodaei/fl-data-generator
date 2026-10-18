@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-18
+
+### Fixed
+- Fixed probe imports of `torch` and `torchvision` in `dataset.py` with `# noqa: F401` to ensure strict linter passing.
+- Enabled strict CI gating by removing `continue-on-error` from linter workflow.
+- Corrected inaccurate 0.1.0 release notes: the function is `quantity_skew_partition` (not `quantity_partition`), the parameter is `classes_per_client` (not `shards_per_client`), and `SVHN` is not a supported built-in dataset.
+
+### Changed
+- Migrated project metadata to modern PEP 639 specification (`license = "MIT"` and `setuptools>=77`).
+- Added optional extras `torch` (`["torch", "torchvision"]`) and `all` (`["fl-data-generator[torch,viz]"]`) to `pyproject.toml`.
+- Added `.gitattributes` to standardize LF line endings across platforms.
+
 ## [0.1.0] - 2026-10-18
 
 ### Added
@@ -20,5 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite covering edge cases, property-based tests via Hypothesis, and runnable documentation tests.
 - CI/CD workflow testing Python matrix 3.9 through 3.13 and lowest-direct dependency resolution with `uv`.
 
-[Unreleased]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/khastkhodaei/fl-data-generator/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/khastkhodaei/fl-data-generator/releases/tag/v0.1.0

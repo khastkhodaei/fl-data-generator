@@ -39,6 +39,12 @@ pip install fl-data-generator
 ### With Optional Extras
 
 ```bash
+# PyTorch and torchvision integration
+pip install "fl-data-generator[torch]"
+
+# All optional dependencies (torch + visualization)
+pip install "fl-data-generator[all]"
+
 # Development dependencies (pytest, hypothesis, ruff, etc.)
 pip install "fl-data-generator[dev]"
 
@@ -174,6 +180,7 @@ fl-data-generator/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml               # GitHub Actions CI matrix workflow
+├── .gitattributes               # Line ending normalization
 ├── src/
 │   └── fl_data_generator/       # Core library package
 │       ├── __init__.py          # Public API exports
@@ -212,7 +219,7 @@ If you use `fl-data-generator` in your research or benchmarks, please cite it us
   author = {Khastkhodaei, Mostafa},
   title = {fl-data-generator: A Lightweight Federated Learning Data Partitioning Library},
   url = {https://github.com/khastkhodaei/fl-data-generator},
-  version = {0.1.0},
+  version = {0.1.1},
   year = {2026}
 }
 ```

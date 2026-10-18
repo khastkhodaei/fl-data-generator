@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Union
 import numpy as np
 
 try:
-    import torch
+    import torch  # noqa: F401
     from torch.utils.data import DataLoader, Dataset, Subset
 
     _HAS_TORCH = True
@@ -14,7 +14,7 @@ except ImportError:
     Subset = None  # type: ignore
 
 try:
-    import torchvision
+    import torchvision  # noqa: F401
     import torchvision.datasets as tv_datasets
 
     _HAS_TORCHVISION = True
