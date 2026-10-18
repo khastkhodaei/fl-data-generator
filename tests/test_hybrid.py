@@ -114,3 +114,18 @@ def test_hybrid_partition_float_labels_raises():
     with pytest.raises(ValueError, match=r"labels must be integer-valued"):
         hybrid_partition(labels, num_clients=2)
 
+
+@pytest.mark.parametrize("invalid_alpha", [[0.5, 0.5], (0.5, 0.5), np.array([0.5, 0.5])])
+def test_hybrid_partition_sequence_alpha_raises_value_error(invalid_alpha):
+    labels = [0, 1, 0, 1]
+    with pytest.raises(ValueError, match="alpha must be a scalar"):
+        hybrid_partition(labels, num_clients=2, alpha=invalid_alpha)
+
+
+@pytest.mark.parametrize("invalid_beta", [[0.5, 0.5], (0.5, 0.5), np.array([0.5, 0.5])])
+def test_hybrid_partition_sequence_beta_raises_value_error(invalid_beta):
+    labels = [0, 1, 0, 1]
+    with pytest.raises(ValueError, match="beta must be a scalar"):
+        hybrid_partition(labels, num_clients=2, beta=invalid_beta)
+
+
