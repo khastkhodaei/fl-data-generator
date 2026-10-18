@@ -60,16 +60,12 @@ def dirichlet_partition(
             f"num_clients ({num_clients}) cannot exceed number of samples ({num_samples})"
         )
 
-    if not isinstance(min_size, int) or isinstance(min_size, bool):
-        raise ValueError(f"min_size must be an integer, got {type(min_size).__name__}")  # noqa: TRY004
-    if min_size < 0:
-        raise ValueError(f"min_size must be non-negative, got {min_size}")
+    min_size = validate_partitioner_int("min_size", min_size, min_value=0)
     if min_size * num_clients > num_samples:
         raise ValueError(
             f"min_size * num_clients ({min_size * num_clients}) cannot exceed number of samples ({num_samples})"
         )
-    if not isinstance(max_retries, int) or isinstance(max_retries, bool) or max_retries <= 0:
-        raise ValueError(f"max_retries must be a positive integer, got {max_retries}")
+    max_retries = validate_partitioner_int("max_retries", max_retries, min_value=1)
 
     if isinstance(alpha, (bool, np.bool_)):
         raise ValueError("alpha cannot be a boolean")

@@ -255,16 +255,85 @@ def test_numpy_dataset_direct():
 
 
 def test_federated_dataset_lazy_torch_import():
+    from pathlib import Path
     import subprocess
     import sys
 
+    src_dir = str(Path(__file__).resolve().parents[1] / "src")
     code = (
-        "import sys, fl_data_generator; "
+        f"import sys; sys.path.insert(0, {src_dir!r}); "
+        "import fl_data_generator; "
         "assert 'torch' not in sys.modules, 'torch is unexpectedly loaded!'; "
         "assert 'torchvision' not in sys.modules, 'torchvision is unexpectedly loaded!'"
     )
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert result.returncode == 0, f"Lazy import failed: {result.stderr}"
+
+
+def test_numpy_dataset_torch_interop():
+    from pathlib import Path
+    import pickle
+    import subprocess
+    import sys
+
+    torch = pytest.importorskip("torch")
+
+    X = np.ones((10, 3))
+    y = np.arange(10)
+    ds = NumpyDataset(X, y)
+
+    assert isinstance(ds, torch.utils.data.Dataset)
+    pickled = pickle.dumps(ds)
+
+    # In-process roundtrip
+    loaded = pickle.loads(pickled)
+    assert len(loaded) == 10
+    assert isinstance(loaded, torch.utils.data.Dataset)
+
+    # Cross-process subprocess roundtrip (guarantees spawn/forkserver safety)
+    src_dir = str(Path(__file__).resolve().parents[1] / "src")
+    child_code = (
+        f"import sys; sys.path.insert(0, {src_dir!r}); "
+        "import pickle, torch; "
+        "payload = sys.stdin.buffer.read(); "
+        "loaded = pickle.loads(payload); "
+        "assert len(loaded) == 10; "
+        "assert isinstance(loaded, torch.utils.data.Dataset); "
+        "assert loaded[3][1] == 3"
+    )
+    res = subprocess.run([sys.executable, "-c", child_code], input=pickled, capture_output=True)
+    assert res.returncode == 0, f"Child unpickle failed: {res.stderr.decode()}"
+
+    # Multi-worker DataLoader test (verifies multiprocessing worker serialization)
+    from torch.utils.data import DataLoader
+
+    loader = DataLoader(ds, batch_size=2, num_workers=2)
+    batches = list(loader)
+    assert len(batches) == 5
+
+
+def test_numpy_dataset_subclassing():
+    pytest.importorskip("torch")
+    import torch.utils.data
+
+    class CustomDataset(NumpyDataset):
+        def __init__(self, data, targets, tag):
+            super().__init__(data, targets)
+            self.tag = tag
+
+    custom = CustomDataset([1, 2], [10, 20], tag="test_tag")
+    assert isinstance(custom, CustomDataset)
+    assert isinstance(custom, NumpyDataset)
+    assert isinstance(custom, torch.utils.data.Dataset)
+    assert custom.tag == "test_tag"
+    assert len(custom) == 2
+
+    # Verify base NumpyDataset does not suffer from class contamination
+    base = NumpyDataset([1, 2], [10, 20])
+    assert type(base) is not type(custom)
+    assert isinstance(base, NumpyDataset)
+    assert not hasattr(base, "tag")
+
 
 
 def test_federated_dataset_num_clients_types():

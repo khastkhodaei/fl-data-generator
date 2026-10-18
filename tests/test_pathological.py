@@ -203,4 +203,34 @@ def test_pathological_partition_float_labels_raises():
         pathological_partition(labels, num_clients=2, classes_per_client=1)
 
 
+def test_pathological_partition_seed_compatibility_regression():
+    labels = np.repeat(np.arange(10), 50)
+    res = pathological_partition(labels, num_clients=10, classes_per_client=2, seed=42)
+    expected_client_0_prefix = np.array([181, 394, 366, 186, 370])
+    np.testing.assert_array_equal(res[0][:5], expected_client_0_prefix)
 
+
+def test_pathological_partition_imbalanced_no_empty_client():
+    # Minimal repro case: 1 sample in class 0, 20 samples in class 1
+    labels = np.array([0] + [1] * 20)
+    res = pathological_partition(labels, num_clients=3, classes_per_client=1, seed=3)
+    assert all(len(indices) > 0 for indices in res.values()), "Empty client produced!"
+    assert sorted([len(indices) for indices in res.values()]) == [1, 10, 10]
+
+    # Larger imbalanced case matching 0.1.2 parity
+    class_sizes = [28, 38, 11, 24, 2]
+    large_labels = []
+    for c_idx, sz in enumerate(class_sizes):
+        large_labels.extend([c_idx] * sz)
+    res_large = pathological_partition(large_labels, num_clients=11, classes_per_client=1, seed=0)
+    expected_sizes = [8, 1, 5, 19, 19, 1, 6, 14, 8, 14, 8]
+    assert [len(res_large[cid]) for cid in range(11)] == expected_sizes
+
+
+def test_pathological_partition_repair_branch_covered():
+    # Covers deterministic repair branch where random permutation placed larger shard counts
+    # on classes with fewer samples (would raise ValueError in 0.1.2 or produce empty clients).
+    labels = np.concatenate([np.full(s, i) for i, s in enumerate([26, 9, 28, 1])])
+    res = pathological_partition(labels, num_clients=3, classes_per_client=2, seed=2)
+    assert [len(res[c]) for c in range(3)] == [23, 14, 27]
+    assert all(len(v) > 0 for v in res.values())
