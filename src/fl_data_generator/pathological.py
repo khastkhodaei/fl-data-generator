@@ -11,9 +11,10 @@ def pathological_partition(
 ) -> Dict[int, np.ndarray]:
     """Partition dataset indices among clients with pathological non-IID label skew.
 
-    Mimics the classic FedAvg benchmark setup where data is organized by class,
-    split into shards, and each client receives shards corresponding to a fixed
-    number of distinct classes.
+    Assigns k distinct classes per client (NIID-Bench #C=k, Li et al. 2021),
+    NOT the McMahan et al. 2017 sort-and-shard scheme. Each class's samples are
+    split into shards, and clients receive shards corresponding to their assigned
+    classes.
 
     Parameters
     ----------
@@ -30,6 +31,16 @@ def pathological_partition(
     -------
     dict of int to np.ndarray
         Mapping from client ID to array of assigned sample indices.
+
+    Raises
+    ------
+    ValueError
+        If num_clients <= 0 or classes_per_client <= 0.
+        If labels is empty.
+        If classes_per_client exceeds the number of unique classes.
+        If total client slots is less than the number of unique classes.
+        If total samples is less than total class shards.
+        If any class has fewer samples than the number of shards assigned to it.
     """
     labels_arr = np.asarray(labels)
     num_samples = len(labels_arr)
@@ -73,6 +84,17 @@ def pathological_partition(
     counts += base
     counts[:rem] += 1
     rng.shuffle(counts)
+
+    # Validate that every class has at least as many samples as assigned shards
+    for c_idx, cls_val in enumerate(unique_classes):
+        class_sample_count = int(np.count_nonzero(labels_arr == cls_val))
+        needed_shards = int(counts[c_idx])
+        if class_sample_count < needed_shards:
+            raise ValueError(
+                f"Class '{cls_val}' has {class_sample_count} sample(s), which is fewer than "
+                f"the assigned {needed_shards} shard(s). Cannot partition without producing empty shards."
+            )
+
 
     client_classes = [set() for _ in range(num_clients)]
     sorted_class_indices = np.argsort(-counts)

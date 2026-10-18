@@ -139,30 +139,52 @@ def test_pathological_grid_invariants():
     assert not violations, f"Grid violations ({len(violations)} total):\n" + "\n".join(violations[:10])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="pathological_partition leaves shards unassigned / wrong class count; fixed in #9 (T2)",
-)
 def test_pathological_class_with_fewer_samples_than_shards():
+    """Class with fewer samples than assigned shards must raise ValueError."""
     labels = np.array([0] * 1 + [1] * 15 + [2] * 14)
     num_clients = 10
     classes_per_client = 2
     seed = 42
 
-    result = pathological_partition(
-        labels, num_clients=num_clients, classes_per_client=classes_per_client, seed=seed
-    )
-
-    all_indices = []
-    for cid in range(num_clients):
-        assert cid in result
-        indices = result[cid]
-        all_indices.extend(indices)
-        distinct = len(np.unique(labels[indices]))
-        assert distinct == classes_per_client, (
-            f"Client {cid} has {distinct} distinct classes, expected {classes_per_client}"
+    with pytest.raises(
+        ValueError,
+        match=r"Class.*0.*has 1 sample\(s\).*fewer than.*assigned.*shard",
+    ):
+        pathological_partition(
+            labels, num_clients=num_clients, classes_per_client=classes_per_client, seed=seed
         )
 
-    assert set(all_indices) == set(range(len(labels)))
-    assert len(all_indices) == len(labels)
+
+def test_pathological_boundary_sample_count_sufficient():
+    """Each class has exactly 2 samples for 2 assigned shards: succeeds."""
+    labels = np.array([0, 0, 1, 1, 2, 2])
+    client_dict = pathological_partition(labels, num_clients=3, classes_per_client=2, seed=42)
+    assert len(client_dict) == 3
+    all_indices = []
+    for indices in client_dict.values():
+        assert len(np.unique(labels[indices])) == 2
+        all_indices.extend(indices)
+    assert set(all_indices) == set(range(6))
+
+
+def test_pathological_boundary_sample_count_insufficient():
+    """Class 0 has 1 sample but 2 shards assigned: raises ValueError."""
+    labels = np.array([0, 1, 1, 2, 2, 2])
+    with pytest.raises(
+        ValueError,
+        match=r"Class.*0.*has 1 sample\(s\).*fewer than.*assigned.*2 shard",
+    ):
+        pathological_partition(labels, num_clients=3, classes_per_client=2, seed=42)
+
+
+def test_pathological_partition_global_rng_untouched():
+    """Global np.random state must not be modified by pathological_partition."""
+    labels = np.repeat(np.arange(3), 20)
+    state_before = np.random.get_state()
+    pathological_partition(labels, num_clients=3, classes_per_client=2, seed=42)
+    state_after = np.random.get_state()
+    assert state_before[0] == state_after[0]
+    np.testing.assert_array_equal(state_before[1], state_after[1])
+    assert state_before[2:] == state_after[2:]
+
 
