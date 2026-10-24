@@ -222,8 +222,6 @@ def test_federated_dataset_generic_dataset_objects():
 def test_federated_dataset_non_torch_fallback(monkeypatch):
     """Verify _NonTorchSubset behaves as expected when torch is unavailable."""
     monkeypatch.setattr("fl_data_generator.dataset._HAS_TORCH", False)
-    monkeypatch.setattr("fl_data_generator.dataset.Subset", None)
-    monkeypatch.setattr("fl_data_generator.dataset.DataLoader", None)
 
     X = np.arange(50).reshape(25, 2)
     y = np.array([0, 1] * 12 + [0])
@@ -345,3 +343,72 @@ def test_federated_dataset_num_clients_types():
 
     with pytest.raises(ValueError):
         FederatedDataset((X, y), num_clients=True)
+
+
+def test_federated_dataset_builtin_vision_default_totensor(monkeypatch):
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("torchvision")
+    from PIL import Image
+    import torchvision.transforms as tv_transforms
+
+    class FakeCIFAR10:
+        def __init__(
+            self, root, train=True, download=False, transform=None, target_transform=None
+        ):
+            self.root = root
+            self.train = train
+            self.download = download
+            self.transform = transform
+            self.target_transform = target_transform
+            self.data = np.zeros((20, 32, 32, 3), dtype=np.uint8)
+            self.targets = [i % 10 for i in range(20)]
+
+        def __len__(self):
+            return len(self.targets)
+
+        def __getitem__(self, idx):
+            img = Image.fromarray(self.data[idx])
+            target = self.targets[idx]
+            if self.transform is not None:
+                img = self.transform(img)
+            if self.target_transform is not None:
+                target = self.target_transform(target)
+            return img, target
+
+    monkeypatch.setattr("fl_data_generator.dataset._HAS_TORCHVISION", True)
+    monkeypatch.setattr("fl_data_generator.dataset.tv_datasets.CIFAR10", FakeCIFAR10)
+
+    # 1. Default transform is ToTensor
+    fed_data = FederatedDataset("cifar10", num_clients=2, partition="iid", seed=42)
+    assert fed_data.transform is not None
+    assert isinstance(fed_data.transform, tv_transforms.ToTensor)
+
+    # 2. Iterating through get_client_dataloader yields tensor of shape [4, 3, 32, 32]
+    loader = fed_data.get_client_dataloader(0, batch_size=4, shuffle=False)
+    batch_inputs, batch_targets = next(iter(loader))
+    assert isinstance(batch_inputs, torch.Tensor)
+    assert batch_inputs.shape == (4, 3, 32, 32)
+    assert isinstance(batch_targets, torch.Tensor)
+    assert batch_targets.shape == (4,)
+
+    # 3. Custom transform is preserved
+    def custom_transform(img):
+        return "custom"
+
+    fed_custom = FederatedDataset(
+        "cifar10", num_clients=2, partition="iid", transform=custom_transform, seed=42
+    )
+    assert fed_custom.transform is custom_transform
+
+    # 4. Custom arrays do not force vision transforms
+    fed_numpy = FederatedDataset((np.zeros((10, 5)), np.zeros(10)), num_clients=2, seed=42)
+    assert fed_numpy.transform is None
+
+    # 5. Lazy tv_transforms export
+    import fl_data_generator.dataset as ds_mod
+
+    assert ds_mod.tv_transforms is tv_transforms
+
+    monkeypatch.setattr("fl_data_generator.dataset._HAS_TORCHVISION", False)
+    assert ds_mod.__getattr__("tv_transforms") is None
+

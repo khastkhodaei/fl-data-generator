@@ -275,6 +275,11 @@ class FederatedDataset:
             ds_class_name = self.SUPPORTED_DATASETS[ds_key]
             ds_cls = getattr(datasets_module, ds_class_name)
 
+            if self.transform is None:
+                transforms_module = getattr(cur_module, "tv_transforms")
+                if transforms_module is not None and hasattr(transforms_module, "ToTensor"):
+                    self.transform = transforms_module.ToTensor()
+
             ds_instance = ds_cls(
                 root=self.data_dir,
                 train=self.train,
@@ -516,6 +521,15 @@ def __getattr__(name: str) -> Any:
                 import torchvision.datasets as _tv_datasets
 
                 return _tv_datasets
+            except ImportError:
+                return None
+        return None
+    if name == "tv_transforms":
+        if _HAS_TORCHVISION:
+            try:
+                import torchvision.transforms as _tv_transforms
+
+                return _tv_transforms
             except ImportError:
                 return None
         return None
